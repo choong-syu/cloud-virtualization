@@ -404,6 +404,10 @@ echo "현재 셸 PID: $$"
 
 두 `sleep` 프로세스의 PPID가 현재 셸 PID와 같다면, 현재 셸이 두 프로세스의 부모라는 뜻입니다.
 
+![하나의 sleep 프로그램 파일에서 서로 다른 PID의 두 프로세스가 실행되고, 두 프로세스의 PPID는 부모 Bash PID와 같다.](images/01-program-process.png)
+
+*그림 1. 점선은 프로그램 실행, 실선은 부모·자식 관계를 나타냅니다. PID는 예시이며 자신의 출력값과 비교합니다.*
+
 실습용 프로세스를 종료합니다.
 
 #### 19. (터미널 A) **두 `sleep` 프로세스에 종료 요청**
@@ -537,6 +541,10 @@ hostname
 두 창 모두 같은 실습 VM의 hostname이 나와야 합니다. 예를 들어 두 창 모두 `vm1`입니다. 이름만 같다고 반드시 같은 VM인 것은 아니므로, 두 SSH 연결에서 같은 접속 주소와 VM 대상을 선택했는지도 함께 확인합니다.
 
 ---
+
+![학생 PC의 터미널 A와 B가 같은 Linux VM 안의 Bash A와 Bash B에 각각 SSH로 연결된다.](images/02-terminals-one-vm.png)
+
+*그림 2. SSH 접속 후 사용하는 셸을 중심으로 단순화했습니다. 실제 접속을 처리하는 sshd 등의 중간 과정은 생략했습니다. 두 Bash는 독립된 세션이며, 아직 namespace를 분리하기 전입니다.*
 
 ### 2.3 **분리하기 전의 기준 상태를 기록한다**
 
@@ -848,6 +856,10 @@ hostname
 
 UTS namespace 안의 여러 프로세스는 같은 UTS 값을 공유하지만, 다른 UTS namespace의 프로세스에는 변경이 보이지 않습니다. 이것이 namespace가 제공하는 **분리된 관점**입니다.
 
+![서로 다른 UTS namespace의 Bash는 다른 hostname을 보지만 하나의 파일 시스템과 Linux 커널을 공유한다.](images/03-uts-hostname.png)
+
+*그림 3. `cloudvm`은 원래 호스트 이름의 예시입니다. `hostname`의 실행 결과와 공유 파일 `/etc/hostname`의 내용을 구분합니다.*
+
 터미널 A에서 UTS namespace 셸을 종료합니다.
 
 #### 44. (터미널 A) **UTS namespace 셸 종료**
@@ -1128,6 +1140,10 @@ readlink /proc/self/ns/pid
 
 ---
 
+![새 PID namespace 안의 하나의 sleep 프로세스에 내부 PID 5와 호스트 PID 4318이라는 두 번호가 대응한다.](images/04-one-process-two-pids.png)
+
+*그림 4. 상자는 PID namespace의 계층을 나타냅니다. `sleep`은 하나이며, PID 숫자는 예시입니다.*
+
 <a id="lab-5"></a>
 
 ## 5. **PID 관점을 나누었는데 `/proc/1`은 왜 호스트 프로세스를 가리키는가?**
@@ -1211,6 +1227,10 @@ A와 같은 호스트 PID 1의 이름이 나와야 합니다. **두 터미널의
 이번 주에는 **`/proc`를 새로 마운트하지 않습니다.** Mount namespace와 새 `/proc`는 3주차의 핵심 실습입니다. 지금은 정리 단계로 넘어갑니다.
 
 ---
+
+![터미널 A의 Bash는 내부 PID 1이지만 A와 B의 기존 /proc/1 조회는 모두 호스트 PID 1의 systemd를 가리킨다.](images/05-pid-proc-view.png)
+
+*그림 5. `echo "$$"`는 현재 Bash의 PID를, `cat /proc/1/comm`은 현재 마운트된 procfs 기준의 PID 1 이름을 확인합니다. 이번 단계에서는 새 procfs를 마운트하지 않았습니다.*
 
 <a id="lab-6"></a>
 
