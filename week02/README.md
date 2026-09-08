@@ -1332,23 +1332,6 @@ UTS namespace와 PID namespace를 만들었지만 모든 것이 분리된 것은
 ---
 
 
-## [참고] 긴 명령을 읽을 때 다시 찾아볼 셸 용어
-
-| 용어 | 자세한 의미 |
-| --- | --- |
-| 명령·option·argument | 명령은 실행할 프로그램이나 shell 내장 기능입니다. option은 `--pid`, `-p`처럼 동작 방식을 선택하고, argument는 PID·경로·문자열처럼 명령이 처리할 값을 전달합니다. 같은 `-p`라도 명령마다 뜻이 다르므로 해당 명령의 해설과 도움말을 함께 봅니다. |
-| shell variable·environment variable | shell variable은 현재 shell이 이름과 값을 연결해 저장한 것이고, export된 environment variable은 그 shell이 시작하는 자식 process에도 전달됩니다. `$PID`, `${ROOTFS}`는 저장된 값을 꺼내는 표기이며 변수 이름 자체가 kernel 자원은 아닙니다. |
-| quoting | 큰따옴표는 `$VAR`를 실제 값으로 바꾸면서도 공백을 포함한 결과를 한 argument로 유지합니다. 작은따옴표는 대부분의 특수문자와 변수 확장을 막아 적힌 내용을 그대로 전달하므로, 두 종류를 임의로 바꾸면 명령 의미가 달라질 수 있습니다. |
-| exit status | 명령이 끝나며 shell에 돌려주는 작은 정수 결과입니다. 일반적으로 `0`은 성공, 0이 아닌 값은 실패나 다른 상태를 뜻하며 `if`, `&&`, `||`는 이 값을 이용해 다음 실행 경로를 정합니다. 화면에 문장이 출력되었다는 사실과 exit status가 성공이라는 사실은 별개입니다. |
-| standard input·output·error | process가 기본으로 사용하는 입력 stream, 정상 출력 stream과 오류 출력 stream입니다. terminal에 연결할 수도 있고 file·pipe에 연결할 수도 있으며, 줄여서 stdin, stdout, stderr라고 부릅니다. |
-| redirection | `> file`은 stdout을 file로 보내고 `2> file`은 stderr를 보냅니다. `>>`는 기존 내용을 덮어쓰지 않고 뒤에 추가하며, `/dev/null`로 보낸 출력은 버려지므로 무엇을 숨기는지 확인해야 합니다. |
-| pipe | `A \| B`는 A의 stdout을 B의 stdin에 연결합니다. 두 command를 단순히 연속 실행하는 기호가 아니라 data가 흐르는 연결이며, `pipefail`이 없으면 앞 command의 실패가 마지막 결과에 가려질 수 있습니다. |
-| command substitution | `$(command)`는 안쪽 command의 stdout을 문자열로 받아 변수 대입이나 바깥 command의 argument에 넣습니다. trailing newline은 제거될 수 있으므로 구조화된 여러 줄 data를 무조건 한 변수에 넣는 용도로 쓰지는 않습니다. |
-| here-document | `<<EOF`와 마지막 `EOF` 사이의 여러 줄을 한 command의 stdin으로 전달하는 shell 문법입니다. 종료 표식을 작은따옴표로 감싼 `<<'EOF'`는 내용 안의 `$VAR`를 작성 시점에 확장하지 않습니다. |
-| subshell | 괄호 `( … )` 안의 명령을 별도 shell process에서 실행하는 구조입니다. 그 안에서 바꾼 현재 디렉터리·일반 shell variable·option이 바깥 shell에 그대로 남지 않게 범위를 나눌 수 있습니다. |
-
----
-
 <a id="troubleshooting"></a>
 
 ## [참고] 실습 중 막혔을 때 확인할 사항
