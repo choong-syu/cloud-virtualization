@@ -81,6 +81,10 @@ student@cloudvm:~$
 
 명령은 언제나 어떤 사용자 권한과 어떤 디렉터리에서 실행됩니다. 같은 명령이라도 위치와 권한이 다르면 결과가 달라질 수 있습니다. 따라서 실습을 시작할 때는 다음 세 가지를 먼저 확인하는 습관을 들입니다.
 
+<img width="3822" height="2030" alt="image" src="https://github.com/user-attachments/assets/1b4baaab-3a83-45bd-ba8b-326819dfa4e6" />
+
+
+
 #### 01. (터미널 A) **현재 사용자 확인**
 
 ```bash
