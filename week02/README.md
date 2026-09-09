@@ -904,7 +904,7 @@ hostname
 
 이번에는 UTS와 PID namespace를 각각 새로 만들고, 새 PID namespace의 첫 프로세스로 Bash를 실행합니다. UTS를 함께 분리하는 이유는 내부 hostname을 바꾸어도 호스트에 영향을 주지 않도록 하기 위해서입니다. `--pid`만 선택하면 hostname을 분리하지 않으므로, 이 교재의 hostname 변경 단계까지 따라 할 때는 `--uts`를 빼면 안 됩니다.
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/49e30266-d976-4ef9-84f1-7b3f5ffcaa30" />
+<img width="3325" height="1024" alt="image" src="https://github.com/user-attachments/assets/60f4c394-61d4-49bc-8e01-3900341ba895" />
 
 
 **왜 이번에는 `--fork`가 필요할까요?**
