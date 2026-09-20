@@ -1,3 +1,5 @@
 * text=auto
 *.md text eol=lf
 *.sh text eol=lf
+week04/scripts/*.c text eol=lf
+week04/scripts/resource-workload-linux-x86_64 binary
