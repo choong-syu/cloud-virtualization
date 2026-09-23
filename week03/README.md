@@ -21,7 +21,7 @@
 
 이전 실습의 안쪽 셸을 종료한 뒤 일반 사용자로 시작합니다. 아래 복사 블록에는 명령이 하나씩 있습니다. 블록을 순서대로 실행하고 오류가 없을 때 다음으로 넘어갑니다. `예상 결과:` 아래 내용은 실행하지 않고 자신의 출력과 비교합니다. `sudo`가 암호를 물으면 해당 **Linux 실습 계정 암호**를 입력합니다. 입력 중 글자나 별표가 표시되지 않습니다.
 
-1. `wget`을 준비합니다. 이미 설치되어 있어도 실행할 수 있습니다.
+1. `curl`을 준비합니다. 이미 설치되어 있어도 실행할 수 있습니다.
 
 패키지 목록을 갱신합니다.
 
@@ -29,10 +29,10 @@
 sudo apt-get update
 ```
 
-`wget`을 설치합니다.
+`curl`을 설치합니다.
 
 ```bash
-sudo apt-get install -y wget
+sudo apt-get install -y curl
 ```
 
 2. 홈 디렉터리에서 준비 스크립트를 내려받습니다.
@@ -46,21 +46,12 @@ cd "$HOME"
 준비 스크립트를 내려받습니다.
 
 ```bash
-wget --timeout=15 --tries=2 -O week03-setup.sh https://raw.githubusercontent.com/choong-syu/cloud-virtualization/main/week03/setup.sh
+curl -fL \
+  --connect-timeout 15 --max-time 60 --retry 1 \
+  --resolve 'raw.githubusercontent.com:443:185.199.110.133' \
+  -o week03-setup.sh \
+  'https://raw.githubusercontent.com/choong-syu/cloud-virtualization/main/week03/setup.sh'
 ```
-
-`wget`이 오류 없이 끝났는지 확인합니다. 실패하면 다음 실행 명령을 입력하지 않습니다. [준비 스크립트 내용 보기](setup.sh)
-
-**학교 VM에서 다운로드가 시간 초과되면:** 진행 중인 `wget`을 `Ctrl+C`로 종료하고, 아래 대체 주소로 같은 파일을 받습니다. 학교 `vm45`에서는 이 GitHub API 경로로 다운로드를 확인했습니다.
-
-```bash
-wget --timeout=15 --tries=2 \
-  --header='Accept: application/vnd.github.raw+json' \
-  -O week03-setup.sh \
-  'https://api.github.com/repos/choong-syu/cloud-virtualization/contents/week03/setup.sh?ref=main'
-```
-
-주소 전체의 작은따옴표와 `--header`를 포함해 입력합니다. 대체 경로도 실패하면 실행하지 말고 교수자에게 오류를 보여 줍니다.
 
 3. 일반 사용자로 준비 스크립트를 실행합니다. **앞에 `sudo`를 붙이지 않습니다.** 필요한 설치 명령만 스크립트 안에서 `sudo`를 사용합니다.
 
