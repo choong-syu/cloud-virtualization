@@ -43,7 +43,7 @@ sudo apt-get update
 
 ```bash
 sudo apt-get install -y --no-upgrade \
-  wget ca-certificates tar gzip busybox-static procps util-linux hostname file coreutils
+  wget curl ca-certificates tar gzip busybox-static procps util-linux hostname file coreutils
 ```
 
 `sudo`가 암호를 물으면 실습 계정의 암호를 입력합니다. 입력 중 글자나 별표가 보이지 않는 것은 정상입니다.
@@ -63,6 +63,16 @@ cd "$HOME"
 ```bash
 wget --timeout=15 --tries=2 \
   -O week04-v1.1.0.tar.gz \
+  'https://github.com/choong-syu/cloud-virtualization/releases/download/week04-v1.1.0/week04-v1.1.0.tar.gz'
+```
+
+또는 아래 명령어를 사용합니다. 다운로드 서버에 연결이 지연될 때 사용할 수 있으며, 두 명령 중 하나만 성공하면 됩니다.
+
+```bash
+curl -fL \
+  --connect-timeout 15 --max-time 60 --retry 1 \
+  --resolve 'release-assets.githubusercontent.com:443:185.199.110.133' \
+  -o week04-v1.1.0.tar.gz \
   'https://github.com/choong-syu/cloud-virtualization/releases/download/week04-v1.1.0/week04-v1.1.0.tar.gz'
 ```
 
