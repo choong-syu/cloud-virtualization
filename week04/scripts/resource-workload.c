@@ -11,9 +11,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define VERSION "1.0"
-#define MAX_RUNTIME_SECONDS 180
-#define INPUT_TIMEOUT_SECONDS 60
+#define VERSION "1.1.0"
+#define MAX_RUNTIME_SECONDS 600
+#define INPUT_TIMEOUT_SECONDS 300
 #define MAX_MEMORY_MIB 160
 #define CHUNK_MIB 4
 #define MIB ((size_t)1024 * 1024)
@@ -66,8 +66,12 @@ static int finished(double deadline)
 static int finish_status(void)
 {
     if (received_signal == SIGALRM) {
-        puts("Stopped: 180-second runtime limit reached.");
+        printf("Stopped: %d-second runtime limit reached.\n", MAX_RUNTIME_SECONDS);
         return 0;
+    }
+    if (received_signal == SIGINT) {
+        puts("Stopped: Ctrl+C (SIGINT) received.");
+        return 128 + SIGINT;
     }
     if (received_signal != 0) {
         printf("Stopped: signal %d received.\n", (int)received_signal);
@@ -91,7 +95,6 @@ static int run_cpu(double started, double deadline)
     volatile uint64_t value = UINT64_C(1);
     uint64_t iterations = 0;
     double interval_started = monotonic_seconds();
-    printf("mode=cpu pid=%ld max_runtime_s=%d\n", (long)getpid(), MAX_RUNTIME_SECONDS);
     puts("elapsed_s,pid,iterations_per_second");
 
     while (!finished(deadline)) {
@@ -114,13 +117,11 @@ static int run_cpu(double started, double deadline)
 }
 
 /* stdin을 유지한 채 Enter를 기다린다. EOF/시간 초과로 부하를 시작하지 않는다. */
-static int wait_for_enter(double deadline)
+static int wait_for_enter(void)
 {
     double input_deadline = monotonic_seconds() + INPUT_TIMEOUT_SECONDS;
-    if (input_deadline > deadline)
-        input_deadline = deadline;
-    puts("Press Enter to start (60-second input timeout).");
-    while (!finished(deadline)) {
+    printf("Press Enter to start (%d-second input timeout).\n", INPUT_TIMEOUT_SECONDS);
+    while (received_signal == 0) {
         struct pollfd input;
         double left = input_deadline - monotonic_seconds();
         int result;
@@ -183,16 +184,6 @@ static int run_memory(unsigned int target_mib, double started, double deadline)
         fputs("Cannot determine the system page size.\n", stderr);
         return 2;
     }
-    printf("mode=memory pid=%ld target_mib=%u max_runtime_s=%d\n",
-           (long)getpid(), target_mib, MAX_RUNTIME_SECONDS);
-    status = wait_for_enter(deadline);
-    if (status < 0)
-        return finish_status();
-    if (status != 0)
-        return status;
-    if (finished(deadline))
-        return finish_status();
-
     puts("elapsed_s,allocated_mib");
     while (allocated_mib < target_mib && !finished(deadline)) {
         unsigned int amount = target_mib - allocated_mib;
@@ -244,10 +235,11 @@ static void usage(FILE *stream)
         "cpu: busy calculation; prints iterations per actual elapsed second.\n"
         "memory: integer MiB from 1 to 160; writes each page in up to 4 MiB steps.\n"
         "Examples: resource-workload memory 48; resource-workload memory 160\n"
-        "Memory mode waits for Enter, for up to 60 seconds, before allocating.\n"
-        "Total runtime is limited to 180 seconds, including the Enter wait.\n"
+        "Both modes wait for Enter, for up to %d seconds, before starting.\n"
+        "Workload runtime is limited to %d seconds AFTER Enter; waiting is separate.\n"
         "Ctrl+C or SIGTERM stops the workload.\n"
-        "This program does not configure resource policies or inspect cgroups.\n");
+        "This program does not configure resource policies or inspect cgroups.\n",
+        INPUT_TIMEOUT_SECONDS, MAX_RUNTIME_SECONDS);
 }
 
 int main(int argc, char **argv)
@@ -296,6 +288,21 @@ int main(int argc, char **argv)
     }
     if (install_signals() != 0)
         return 2;
+    if (memory_mode)
+        printf("mode=memory pid=%ld target_mib=%u max_runtime_s=%d\n",
+               (long)getpid(), target_mib, MAX_RUNTIME_SECONDS);
+    else
+        printf("mode=cpu pid=%ld max_runtime_s=%d\n", (long)getpid(), MAX_RUNTIME_SECONDS);
+    status = wait_for_enter();
+    if (status < 0) {
+        puts("Not started: cancelled while waiting for Enter.");
+        return finish_status();
+    }
+    if (status != 0)
+        return status;
+    if (received_signal != 0)
+        return finish_status();
+    /* 입력 대기와 별도로 실제 부하 시작부터 실행 시간과 알람을 계산한다. */
     started = monotonic_seconds();
     deadline = started + MAX_RUNTIME_SECONDS;
     alarm(MAX_RUNTIME_SECONDS);

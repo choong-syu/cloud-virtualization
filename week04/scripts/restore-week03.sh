@@ -86,7 +86,7 @@ if [[ "$MODE" == prepare ]]; then
   [[ $(uname -m) == x86_64 ]] || fail '제공 실행 파일은 Linux x86-64용입니다. 다른 CPU는 교수자 준비 안내를 따르세요.'
   [[ -f "$WORKER" && ! -L "$WORKER" ]] || fail '같은 폴더의 부하 실행 파일이 필요합니다.'
   # 전송 중 파일이 바뀌지 않았는지만 확인합니다. 실험 결과를 판정하지 않습니다.
-  EXPECTED=f7baa72d3c79197f21fb8ff1c0dbe45f623589863bc9f5f17eec9fc688fe382f
+  EXPECTED=732939ce48a64d7ddf255e3283f05270f44ef1148d08e4e18fafa16fbd649e8f
   ACTUAL=$(sha256sum -- "$WORKER")
   [[ "${ACTUAL%% *}" == "$EXPECTED" ]] || fail '제공 실행 파일의 지문이 다릅니다. 배포 파일을 확인하세요.'
   command -v sudo >/dev/null || fail 'sudo 권한이 준비된 학생 VM이 필요합니다.'
@@ -101,14 +101,26 @@ if [[ "$MODE" == prepare ]]; then
       fail '이전 namespace 안입니다. 정상 정리 후 호스트에서 다시 실행하세요.'
   done
 
+  # apt는 GitHub 배포와 별개입니다. 준비된 패키지는 다시 설치하지 않습니다.
+  MISSING_PACKAGES=()
+  for package in busybox-static procps util-linux hostname file coreutils; do
+    if [[ $(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true) != 'install ok installed' ]]; then
+      MISSING_PACKAGES+=("$package")
+    fi
+  done
+  if (( ${#MISSING_PACKAGES[@]} )); then
+    say "설치되지 않은 필수 패키지: ${MISSING_PACKAGES[*]} (apt 인터넷 연결 필요)"
+    sudo apt-get update
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade "${MISSING_PACKAGES[@]}"
+  else
+    say '필수 패키지가 모두 설치되어 있어 apt 다운로드를 건너뜁니다.'
+  fi
+
   if [[ -e "$ROOTFS" || -L "$ROOTFS" ]]; then
     say '기존 rootfs를 검사합니다. 파일 트리와 설정을 덮어쓰지 않습니다.'
     validate_tree "$ROOTFS"
   else
     say 'rootfs가 없습니다. 공식 VM 패키지의 정적 BusyBox로 3주차 재료만 만듭니다.'
-    sudo apt-get update
-    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade \
-      busybox-static procps util-linux hostname file coreutils
     # PATH의 다른 BusyBox 대신 설치한 패키지가 제공하는 실행 파일을 선택합니다.
     BUSYBOX_FILES=$(dpkg-query -L busybox-static) || fail 'busybox-static 패키지의 파일 목록을 읽지 못했습니다.'
     BUSYBOX=
