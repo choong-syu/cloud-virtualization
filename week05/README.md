@@ -1,27 +1,12 @@
 ### 오늘 완성할 구조
 
-```text
-                         Linux Host
+![완성 목표: 같은 Linux VM 안의 두 Network namespace를 veth 두 쌍과 IPv4 주소 없는 Linux Bridge로 연결한 전체 구조](images/week05-00-target.png)
 
-                    ┌────────────────┐
-                    │   cv5-br0      │
-                    │ Linux Bridge   │
-                    └──────┬───┬─────┘
-                           │   │
-                  cv5a-host   cv5b-host
-                           │   │
-                         veth veth
-                           │   │
-                    eth0   │   │   eth0
-                 ┌─────────┘   └─────────┐
-                 │                       │
-          ┌─────────────┐         ┌─────────────┐
-          │  cv5-ns1    │         │  cv5-ns2    │
-          │ 10.203.0.2  │         │ 10.203.0.3  │
-          └─────────────┘         └─────────────┘
-```
+**완성 목표:** 두 namespace의 `eth0`에서 출발한 연결이 각각 veth를 지나 호스트의 같은 bridge에서 만납니다. 큰 바깥 경계는 하나의 Linux VM이며, 안쪽 세 영역은 서로 다른 Network namespace입니다.
 
 두 namespace의 `eth0`에만 실습용 IPv4 주소를 설정합니다. `cv5-br0`, `cv5a-host`, `cv5b-host`에는 이번 실습에서 IPv4 주소를 설정하지 않습니다.
+
+**단계별 그림 읽기:** 같은 대상은 계속 같은 위치에 표시됩니다. 회색 점선은 아직 만들지 않은 부분의 예정 위치이며, 마지막 정리 그림에서만 삭제된 대상을 뜻합니다. `UP`·`enabled`는 활성화 설정을 가리키며, `lo`의 실제 조회 상태는 `UNKNOWN`으로 보일 수 있습니다.
 
 ---
 
@@ -196,6 +181,10 @@ sudo ip netns exec cv5-ns2 ip -br link
 
 `lo`는 **loopback(루프백)** 인터페이스입니다. 같은 Network namespace 안에서 자기 자신과 통신할 때 사용합니다.
 
+![1단계 완료: 두 namespace와 각각의 lo만 존재하며 veth와 bridge는 미생성](images/week05-01-namespaces.png)
+
+**현재 위치 — 명령 06까지:** 네트워크 공간 두 개를 만들었습니다. 각 공간에 실제로 존재하는 장치는 `lo`뿐이며, 점선으로 보이는 연결 장치는 이후 단계에서 만듭니다.
+
 **지금 기록:** 명령 05의 host/ns1/ns2 식별값과 명령 06에서 처음 보인 인터페이스를 적습니다.
 
 ---
@@ -298,12 +287,9 @@ sudo ip netns exec cv5-ns2 ip -br link
 
 현재 구조는 다음과 같습니다.
 
-```text
-cv5-ns1                    Host                     cv5-ns2
-  eth0  <---- veth ----> cv5a-host     cv5b-host <---- veth ----> eth0
+![2단계 완료: veth 두 쌍을 만들고 한쪽 끝을 각 namespace의 eth0로 배치했지만 모든 장치는 DOWN이며 IPv4와 bridge는 없음](images/week05-02-veth.png)
 
-아직 cv5a-host와 cv5b-host 사이에는 연결 장치가 없음
-```
+**현재 위치 — 명령 13까지:** 호스트 끝과 내부 `eth0`를 잇는 veth 두 쌍을 배치했습니다. `eth0`에는 아직 IPv4 주소가 없고 장치도 활성화하지 않았으며, 두 호스트 끝 사이의 bridge 연결도 없습니다.
 
 **지금 기록:** 각 namespace에 추가된 `eth0`를 적고, 호스트 쪽 두 끝이 아직 서로 연결되지 않았음을 그림에서 확인합니다.
 
@@ -405,6 +391,10 @@ sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
 
 IP 주소가 같은 서브넷에 있다는 사실만으로 **물리적·가상 연결이 자동으로 만들어지는 것은 아닙니다.** 현재 `cv5a-host`와 `cv5b-host` 사이에 Ethernet frame을 전달해 줄 장치가 없습니다.
 
+![3단계 완료: eth0의 IP와 인터페이스 활성화는 완료됐지만 bridge가 없어 두 veth 사이 통신은 실패](images/week05-03-addresses.png)
+
+**현재 위치 — 명령 19까지:** 주소와 활성화 설정은 끝났습니다. 아직 두 veth를 이어 주는 장치가 없어서 ping 응답을 받지 못합니다. 점선은 통신 경로가 아니라 앞으로 만들 연결의 위치입니다.
+
 **지금 기록:** 두 `eth0`의 IPv4 설정값과 bridge 전 ping 결과를 적습니다. 응답을 받지 못했음을 확인하고, 오류 문구 자체를 외우지는 않습니다.
 
 > 이제 필요한 질문은 “여러 veth 끝을 하나의 가상 네트워크로 묶어 줄 장치는 무엇일까?”입니다.
@@ -475,21 +465,6 @@ ip link show master cv5-br0
 - 이 조회 명령의 `master cv5-br0`: `cv5-br0`에 속한 인터페이스만 골라 보여 줍니다. 앞의 `ip link set ... master ...`와 달리 소속을 바꾸지 않습니다.
 - `cv5a-host`, `cv5b-host`가 보여야 합니다.
 
-현재 구조는 다음과 같습니다.
-
-```text
-cv5-ns1                   Host                    cv5-ns2
-10.203.0.2                                       10.203.0.3
-   eth0                                             eth0
-    │                                                │
-   veth                                             veth
-    │                                                │
-cv5a-host ────────┐                         ┌──── cv5b-host
-                  │                         │
-                  └────── cv5-br0 ──────────┘
-                         Linux Bridge
-```
-
 #### 25. (`cv5-ns1` → `cv5-ns2`) 같은 ping 다시 실행
 
 ```bash
@@ -517,6 +492,10 @@ sudo ip netns exec cv5-ns2 ping -c 2 -W 1 10.203.0.2
 - `10.203.0.2`는 `cv5-ns1/eth0`의 주소입니다.
 
 **예상 결과:** 응답을 받습니다.
+
+![4단계 완료: 두 호스트 veth 끝을 같은 bridge의 포트로 연결하여 양방향 ping 성공](images/week05-04-bridge.png)
+
+**현재 위치 — 명령 26까지:** 가운데 bridge와 두 포트의 소속 관계를 추가해 전체 연결을 완성했습니다. 내부 IP 주소를 바꾸지 않고도 양방향 ping에 성공합니다.
 
 **지금 기록:** bridge에 속한 두 포트 이름과 연결 후 양방향 ping 결과를 적습니다. 명령 19의 실패와 비교하여 무엇을 추가했는지 한 문장으로 설명합니다.
 
@@ -560,6 +539,10 @@ bridge fdb show br cv5-br0 dynamic
 동적 학습 항목은 시간이 지나면 사라질 수 있습니다. 원하는 MAC이 보이지 않으면 명령 25·26의 ping을 다시 수행한 직후 확인합니다. 두 포트만 있는 이번 구조에서 FDB를 읽는 것만으로 frame이 모든 포트에 전달되는 과정까지 직접 관찰했다고 할 수는 없습니다.
 
 > IP는 “누구와 통신할 것인가”를 나타내는 주소이고, 같은 L2 네트워크에서 실제 Ethernet frame을 어느 포트로 전달할지 판단할 때는 MAC 주소 정보가 사용됩니다. 이번에는 이 연결 관계만 이해하면 충분합니다.
+
+![5단계 관찰: 내부 eth0의 MAC A와 MAC B가 각각 cv5a-host와 cv5b-host로 학습되는 FDB 대응](images/week05-05-fdb.png)
+
+**현재 위치 — 명령 27까지:** 새 장치를 만드는 대신 완성된 연결에서 bridge의 학습 결과를 읽습니다. `MAC A`·`MAC B`는 각 내부 `eth0`의 실제 MAC을 대신한 기호입니다. 그림의 두 행은 대응 관계의 예시이며, 실제 FDB 전체가 두 행뿐이라는 뜻은 아닙니다.
 
 #### 28. (호스트) bridge와 host-side 포트에 IPv4 주소가 없는지 확인
 
@@ -609,6 +592,10 @@ sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
 - **예상 결과: 실패가 정상입니다.**
 - 바꾼 것은 `cv5a-host`의 연결 상태 하나뿐입니다.
 
+![6단계 중단 상태: cv5a-host만 관리 DOWN, 내부 eth0는 관리 UP이지만 링크 DOWN, IP와 장치는 그대로 유지](images/week05-06-port-down.png)
+
+**현재 위치 — 명령 30까지:** `cv5a-host`만 비활성화했습니다. 반대쪽 `eth0`도 실제 링크는 내려가지만, 활성화 설정과 IP 주소는 남아 있습니다. 회색 연결은 사라진 장치가 아니라 현재 사용할 수 없는 연결입니다.
+
 #### 31. (호스트) 같은 bridge 포트 다시 올리기
 
 ```bash
@@ -631,6 +618,10 @@ sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
 - 같은 namespace, 같은 `eth0`, 같은 IP 주소를 사용합니다.
 - **예상 결과: 다시 성공합니다.**
 - IP 설정과 연결 상태는 서로 다른 조건임을 확인합니다.
+
+![6단계 복구 상태: 같은 cv5a-host를 다시 UP으로 바꾸어 동일한 장치와 IP 주소로 통신 복구](images/week05-07-port-restored.png)
+
+**현재 위치 — 명령 32까지:** 내려 두었던 같은 포트만 다시 활성화했습니다. namespace·veth·IP를 새로 만들거나 다시 설정하지 않고 ping 응답이 돌아왔습니다.
 
 **지금 기록:** 포트 down 직후와 up으로 복구한 뒤의 ping 결과를 각각 적습니다. 새 veth 생성이나 IP 재설정 없이 결과가 달라졌음을 설명합니다.
 
@@ -690,6 +681,10 @@ ip link show cv5b-host
 - `ip netns list`: `cv5-ns1`, `cv5-ns2`가 더 이상 보이지 않아야 합니다.
 - `ip link show 이름`: 해당 장치가 존재하는지 확인합니다.
 - `cv5-br0`, `cv5a-host`, `cv5b-host`가 없다는 메시지가 나오는 것이 정상 정리 결과입니다.
+
+![7단계 완료: 실습 namespace 두 개와 veth 및 bridge는 삭제되고 기존 호스트 네트워크만 유지](images/week05-08-cleanup.png)
+
+**현재 위치 — 명령 36까지:** 실습용 namespace·veth·bridge를 모두 제거했습니다. 이 그림의 점선은 삭제된 대상의 이전 위치이며, 빈 namespace가 남아 있다는 뜻이 아닙니다. 기존 호스트 네트워크는 유지됩니다.
 
 **지금 기록:** namespace 두 이름과 bridge/veth가 모두 사라졌는지 적습니다.
 
