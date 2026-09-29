@@ -6,10 +6,10 @@
 
 - **터미널 A:** 제한 그룹 안에서 Bash와 부하 프로그램을 실행합니다.
 - **터미널 B:** 같은 VM의 호스트에서 한도를 변경하고 사용량을 관찰합니다.
-- 각 코드 블록 위의 **명령 번호 · 터미널 · 셸 위치**를 확인한 뒤 순서대로 실행합니다. `09-01`은 9단계의 첫 명령을 뜻합니다. 사전 준비는 `00-` 번호를 사용하며, 측정 준비·참고 명령은 별도 번호를 사용합니다.
+- 단계 제목의 **00~26 번호**를 따라 진행하고, 각 명령 위의 **터미널 · 셸 위치**를 확인합니다.
 - A와 B에서 모두 실행할 명령도 터미널별로 나누어 표시했습니다. 예상 출력은 입력하지 않습니다.
 
-## 사전 준비
+## 00. 사전 준비
 
 ![같은 VM에 접속한 두 터미널과 실행 파일 하나를 다운로드하는 준비 과정](images/week04-01-prepare.png)
 
@@ -21,13 +21,13 @@
 
 `curl`은 파일 다운로드 도구이며, `ca-certificates`는 HTTPS 서버의 인증서를 검증할 때 사용하는 인증서 모음입니다. 이미 HTTPS 다운로드가 정상적으로 되면 아래 설치 단계는 생략합니다.
 
-**명령 00-01 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo apt-get update
 ```
 
-**명령 00-02 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo apt-get install -y curl ca-certificates
@@ -35,13 +35,13 @@ sudo apt-get install -y curl ca-certificates
 
 ### 2. 실행 파일 하나 다운로드
 
-**명령 00-03 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 mkdir -p "$HOME/week04"
 ```
 
-**명령 00-04 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 cd "$HOME/week04"
@@ -49,7 +49,7 @@ cd "$HOME/week04"
 
 **1.2.0 실행 파일**을 다운로드합니다. 아래 블록은 줄을 나눈 하나의 명령입니다.
 
-**명령 00-05 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 curl -fL \
@@ -61,7 +61,7 @@ curl -fL \
 
 다운로드가 오류 없이 끝난 뒤 실행 권한을 부여합니다.
 
-**명령 00-06 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 chmod +x resource-workload
@@ -71,7 +71,7 @@ chmod +x resource-workload
 
 다운로드한 프로그램의 사용법을 확인합니다. `./`는 현재 폴더의 실행 파일을 뜻하며, `--help`는 CPU·메모리 부하를 발생시키지 않고 도움말만 출력합니다.
 
-**명령 00-07 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 ./resource-workload --help
@@ -115,13 +115,13 @@ chmod +x resource-workload
 
 **먼저 터미널 A에서 실행합니다.**
 
-**명령 01-01 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 WORK="$HOME/week04"
 ```
 
-**명령 01-02 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 UNIT="cv4-$USER.scope"
@@ -129,13 +129,13 @@ UNIT="cv4-$USER.scope"
 
 **이어서 터미널 B에서 실행합니다.**
 
-**명령 01-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 WORK="$HOME/week04"
 ```
 
-**명령 01-04 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 UNIT="cv4-$USER.scope"
@@ -145,7 +145,7 @@ UNIT="cv4-$USER.scope"
 
 ## 02. (터미널 B · 일반 사용자) 자원 관리 기능 확인
 
-**명령 02-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat /sys/fs/cgroup/cgroup.controllers
@@ -155,7 +155,7 @@ cat /sys/fs/cgroup/cgroup.controllers
 
 OOM 이후 남은 Bash를 유지하는 설정에 필요한 **systemd 253 이상**인지 첫 줄에서 확인합니다.
 
-**명령 02-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 systemctl --version
@@ -165,7 +165,7 @@ systemctl --version
 
 프로그램이 있는 폴더로 이동합니다.
 
-**명령 03-01 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 cd "$WORK"
@@ -173,7 +173,7 @@ cd "$WORK"
 
 한도를 설정하고 그 그룹 안에서 새 Bash를 실행합니다.
 
-**명령 03-02 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemd-run --scope --unit="$UNIT" \
@@ -198,7 +198,7 @@ sudo systemd-run --scope --unit="$UNIT" \
 
 ## 04. (터미널 A · 제한 그룹의 Bash) 위치와 소속 확인
 
-**명령 04-01 · 터미널 A · 제한 그룹 Bash · 관리자**
+**터미널 A · 제한 그룹 Bash · 관리자**
 
 ```bash
 pwd
@@ -206,7 +206,7 @@ pwd
 
 예상 결과: `/home/사용자/week04`처럼 프로그램이 있는 경로입니다. 이후 프로그램은 `./resource-workload`로 실행합니다.
 
-**명령 04-02 · 터미널 A · 제한 그룹 Bash · 관리자**
+**터미널 A · 제한 그룹 Bash · 관리자**
 
 ```bash
 cat /proc/$$/cgroup
@@ -226,7 +226,7 @@ cat /proc/$$/cgroup
 
 이제 B에서 **A의 그룹이 실행 중인지, 어느 cgroup 경로를 사용하는지** 확인합니다.
 
-**명령 05-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 systemctl show "$UNIT" -p ActiveState -p ControlGroup
@@ -247,13 +247,13 @@ systemctl show "$UNIT" -p ActiveState -p ControlGroup
 
 앞에서 확인한 경로를 변수에 저장합니다. `--value`는 `ControlGroup=`이라는 속성 이름을 빼고 **값만 출력**하며, `$(...)`는 명령의 출력값을 가져오는 표현입니다.
 
-**명령 06-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 CG_REL=$(systemctl show "$UNIT" -p ControlGroup --value)
 ```
 
-**명령 06-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$CG_REL"
@@ -261,7 +261,7 @@ echo "$CG_REL"
 
 **값이 비어 있거나 `/`만 나오면 진행하지 않습니다.** 마지막 이름이 자신의 `cv4-사용자.scope`인지 확인합니다.
 
-**명령 06-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 CG="/sys/fs/cgroup$CG_REL"
@@ -271,7 +271,7 @@ CG="/sys/fs/cgroup$CG_REL"
 
 ## 07. (터미널 B · 일반 사용자) 구성원 확인
 
-**명령 07-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/cgroup.procs"
@@ -281,13 +281,13 @@ cat "$CG/cgroup.procs"
 
 ## 08. (터미널 B · 일반 사용자) 적용된 한도 확인
 
-**명령 08-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/cpu.max"
 ```
 
-**명령 08-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.max"
@@ -313,7 +313,7 @@ cat "$CG/memory.max"
 <details>
 <summary>측정 함수 코드 펼치기 — 처음 한 번 등록</summary>
 
-**명령 준비-08 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 # 터미널 B에서 사용하는 조회 전용 함수임. 한도나 프로세스를 변경하지 않음.
@@ -370,7 +370,7 @@ measure_cpu() (
 
 `cpu` 모드는 계산을 반복하며 경과 시간·PID·초당 계산 횟수를 출력합니다. 아래 명령은 **추가 Enter 없이 바로 계산을 시작**합니다.
 
-**명령 09-01 · 터미널 A · 제한 그룹 Bash · 관리자**
+**터미널 A · 제한 그룹 Bash · 관리자**
 
 ```bash
 ./resource-workload cpu
@@ -380,7 +380,7 @@ measure_cpu() (
 
 **B에서** 그룹에 속한 PID 목록을 다시 읽습니다.
 
-**명령 09-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/cgroup.procs"
@@ -395,7 +395,7 @@ cat "$CG/cgroup.procs"
 
 추가된 PID가 A의 출력과 같은지 확인합니다. **아래 `3030`을 자신의 실제 PID로 바꾸어** 이름을 조회합니다.
 
-**명령 09-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat /proc/3030/comm
@@ -411,7 +411,7 @@ cat /proc/3030/comm
 
 **시작 원본 → 5초 대기 → 종료 원본 → 네 항목의 차이** 순서로 출력합니다. `sleep`은 B의 측정만 기다리게 하며, A의 계산은 계속됩니다.
 
-**명령 10-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 measure_cpu "$CG"
@@ -436,13 +436,13 @@ measure_cpu "$CG"
 
 A의 같은 프로그램이 실행 중인 상태에서 아래 두 명령을 순서대로 실행합니다. `set-property`는 그룹 설정을 변경하며, `--runtime`은 실행 중 적용할 설정을 영구 저장하지 않도록 합니다.
 
-**명령 11-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemctl set-property --runtime "$UNIT" CPUQuota=25%
 ```
 
-**명령 11-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/cpu.max"
@@ -454,7 +454,7 @@ cat "$CG/cpu.max"
 
 100%일 때 사용한 **동일한 명령을 한 번 더 실행**합니다. A의 프로그램을 재실행하지 않습니다.
 
-**명령 12-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 measure_cpu "$CG"
@@ -464,17 +464,17 @@ measure_cpu "$CG"
 
 ## 13. (터미널 A → B) 프로그램 종료와 한도 복원
 
-**명령 13-01 · 터미널 A · 제한 그룹 Bash — 프로그램 종료**
+**터미널 A · 제한 그룹 Bash — 프로그램 종료**
 
 키보드에서 `Ctrl+C`를 한 번 누릅니다. 숫자 출력이 멈추고 Bash 프롬프트가 돌아오면 **B로 이동하여** 아래 명령을 순서대로 실행합니다. A에서 `exit`는 입력하지 않습니다.
 
-**명령 13-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemctl set-property --runtime "$UNIT" CPUQuota=100%
 ```
 
-**명령 13-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/cpu.max"
@@ -514,7 +514,7 @@ VM 부하와 측정 경계에 따라 수치는 달라짐. 제한 시간은 CPU�
 
 **현재 사용량(`memory.current`)과 허용 상한(`memory.max`)을 비교**합니다. Bash도 메모리를 사용하므로 시작 사용량은 0이 아닐 수 있습니다.
 
-**명령 14-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.current"
@@ -522,7 +522,7 @@ cat "$CG/memory.current"
 
 같은 사용량을 MiB 단위로도 확인합니다.
 
-**명령 14-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
@@ -530,7 +530,7 @@ echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
 
 소수점 아래를 버리므로 48.9MiB는 `48 MiB`, 1MiB 미만은 `0 MiB`로 표시됩니다. 두 명령은 각각 다시 읽으므로 시점에 따라 값이 조금 달라질 수 있습니다.
 
-**명령 14-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.max"
@@ -538,7 +538,7 @@ cat "$CG/memory.max"
 
 메모리 상한을 MiB 단위로도 확인합니다.
 
-**명령 14-04 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
@@ -550,7 +550,7 @@ echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
 
 `memory 48`은 4MiB씩 메모리를 확보하고 데이터를 기록하여 **총 48MiB의 자료를 보관**합니다. 이 상태에서 상한만 바꿔 비교합니다.
 
-**명령 15-01 · 터미널 A · 제한 그룹 Bash · 관리자**
+**터미널 A · 제한 그룹 Bash · 관리자**
 
 ```bash
 ./resource-workload memory 48
@@ -562,7 +562,7 @@ echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
 
 ## 16. (터미널 B · 일반 사용자) 현재 사용량과 사건 기록 확인
 
-**명령 16-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.current"
@@ -570,7 +570,7 @@ cat "$CG/memory.current"
 
 같은 사용량을 MiB 단위로도 확인합니다.
 
-**명령 16-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
@@ -580,7 +580,7 @@ echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
 
 `memory.events`는 누적 사건 기록입니다. `tee`는 **화면에 출력하면서 같은 내용을 파일에도 저장**합니다.
 
-**명령 16-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.events" | tee "$WORK/memory-events-before.txt"
@@ -590,13 +590,13 @@ cat "$CG/memory.events" | tee "$WORK/memory-events-before.txt"
 
 ## 17. (터미널 B · 일반 사용자) 상한만 96MiB로 변경
 
-**명령 17-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemctl set-property --runtime "$UNIT" MemoryMax=96M
 ```
 
-**명령 17-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.max"
@@ -604,7 +604,7 @@ cat "$CG/memory.max"
 
 MiB 단위로도 확인합니다.
 
-**명령 17-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
@@ -614,7 +614,7 @@ echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
 
 ## 18. (터미널 B · 일반 사용자) 사용량과 사건 기록 비교
 
-**명령 18-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.current"
@@ -622,13 +622,13 @@ cat "$CG/memory.current"
 
 같은 사용량을 MiB 단위로도 확인합니다.
 
-**명령 18-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
 ```
 
-**명령 18-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.events" | tee "$WORK/memory-events-after.txt"
@@ -644,11 +644,11 @@ A에 `Stopped...`가 나오거나 Bash 프롬프트가 돌아왔다면 프로그
 
 **그림 7 · 자료 해제.** A에서 Ctrl+C로 부하 프로그램만 종료함. 자료가 해제되어 memory.current는 줄어들지만, Bash와 실습 cgroup은 다음 OOM 실험을 위해 유지됨.
 
-**명령 19-01 · 터미널 A · 제한 그룹 Bash — 프로그램 종료**
+**터미널 A · 제한 그룹 Bash — 프로그램 종료**
 
 키보드에서 `Ctrl+C`를 눌러 48MiB 프로그램만 종료합니다. **A의 Bash는 종료하지 않습니다.** 이어서 **B에서** 읽습니다.
 
-**명령 19-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.current"
@@ -656,7 +656,7 @@ cat "$CG/memory.current"
 
 같은 사용량을 MiB 단위로도 확인합니다.
 
-**명령 19-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
@@ -691,7 +691,7 @@ echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
 
 기존 그룹이 활성 상태이고, 03에서 지정한 `OOMPolicy=continue`가 적용되어 있는지 확인합니다.
 
-**명령 20-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 systemctl show "$UNIT" -p ActiveState -p OOMPolicy
@@ -699,13 +699,13 @@ systemctl show "$UNIT" -p ActiveState -p OOMPolicy
 
 예상 결과: `ActiveState=active`, `OOMPolicy=continue`입니다. 다르면 하단 문제 해결 안내를 확인합니다.
 
-**명령 20-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.max"
 ```
 
-**명령 20-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
@@ -713,7 +713,7 @@ echo "$(( $(cat "$CG/memory.max") / 1024 / 1024 )) MiB"
 
 예상 결과: `100663296`바이트, `96 MiB`입니다. 3단계에서 낮춘 상한이 유지되어 있습니다.
 
-**명령 20-04 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.oom.group"
@@ -727,7 +727,7 @@ cat "$CG/memory.oom.group"
 
 프로그램을 실행하기 **전에 B에서** 기존 그룹의 사건 기록을 확인합니다.
 
-**명령 21-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.events" | tee "$WORK/oom-before.txt"
@@ -739,7 +739,7 @@ cat "$CG/memory.events" | tee "$WORK/oom-before.txt"
 
 `memory 160`으로 자료를 4MiB씩 늘립니다. **상한은 96MiB**이므로 160MiB에 도달하기 전에 OOM으로 종료될 것으로 예상합니다.
 
-**명령 22-01 · 터미널 A · 제한 그룹 Bash · 관리자**
+**터미널 A · 제한 그룹 Bash · 관리자**
 
 ```bash
 ./resource-workload memory 160
@@ -751,7 +751,7 @@ cat "$CG/memory.events" | tee "$WORK/oom-before.txt"
 
 `$?`는 **바로 직전 명령의 종료 상태**입니다. 다른 명령을 실행하면 값이 바뀌므로, 프롬프트가 돌아오면 아래 명령부터 실행하여 저장합니다.
 
-**명령 23-01 · 터미널 A · 프로그램 종료 직후 돌아온 Bash**
+**터미널 A · 프로그램 종료 직후 돌아온 Bash**
 
 ```bash
 OOM_RC=$?
@@ -759,13 +759,13 @@ OOM_RC=$?
 
 저장한 종료 상태를 출력합니다.
 
-**명령 23-02 · 터미널 A · 프로그램 종료 직후 돌아온 Bash**
+**터미널 A · 프로그램 종료 직후 돌아온 Bash**
 
 ```bash
 echo "$OOM_RC"
 ```
 
-**명령 23-03 · 터미널 A · 프로그램 종료 직후 돌아온 Bash**
+**터미널 A · 프로그램 종료 직후 돌아온 Bash**
 
 ```bash
 whoami
@@ -777,13 +777,13 @@ whoami
 
 경로가 사라져 파일을 읽을 수 없다면 이 단계는 중단하고 “사건 기록 확인 불가”로 남긴 뒤 25단계로 진행합니다.
 
-**명령 24-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.events" | tee "$WORK/oom-after.txt"
 ```
 
-**명령 24-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 cat "$CG/memory.current"
@@ -791,7 +791,7 @@ cat "$CG/memory.current"
 
 같은 사용량을 MiB 단위로도 확인합니다.
 
-**명령 24-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
@@ -822,7 +822,7 @@ echo "$(( $(cat "$CG/memory.current") / 1024 / 1024 )) MiB"
 
 23의 `whoami` 결과가 `root`이고 제한 그룹의 Bash가 남아 있을 때만 `exit`를 실행합니다. 이미 일반 사용자로 돌아왔다면 `exit`는 생략하고 사용자 이름 확인부터 진행합니다.
 
-**명령 25-01 · 터미널 A · 제한 그룹 Bash · 관리자**
+**터미널 A · 제한 그룹 Bash · 관리자**
 
 ```bash
 exit
@@ -830,7 +830,7 @@ exit
 
 원래 셸로 돌아온 뒤 아래 명령을 **따로** 실행합니다.
 
-**명령 25-02 · 터미널 A · 호스트 Bash · 일반 사용자**
+**터미널 A · 호스트 Bash · 일반 사용자**
 
 ```bash
 whoami
@@ -842,7 +842,7 @@ whoami
 
 **종료 여부는 `ActiveState`로 판단**합니다. `LoadState`는 unit 정의를 불러온 상태이며, `loaded`만으로 실행 중이라고 판단하지 않습니다.
 
-**명령 26-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 systemctl show "$UNIT" -p LoadState -p ActiveState
@@ -850,13 +850,13 @@ systemctl show "$UNIT" -p LoadState -p ActiveState
 
 | 결과 | 의미와 다음 행동 |
 | --- | --- |
-| `ActiveState=inactive` | 실행 종료. 26-02로 경로 정리를 확인함 |
-| `LoadState=not-found` | unit 정의도 정리됨. 26-02로 진행함 |
+| `ActiveState=inactive` | 실행 종료. 아래 `ls` 명령으로 경로 정리를 확인함 |
+| `LoadState=not-found` | unit 정의도 정리됨. 아래 `ls` 명령으로 진행함 |
 | `ActiveState=active` | 프로세스가 남아 있음. A에서 부하를 멈추고 25의 Bash 종료를 확인함 |
 
 A를 종료해도 `active`가 유지되거나 A 연결을 잃었다면 하단 문제 해결 안내를 따릅니다.
 
-**명령 26-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 ls -ld "$CG"
@@ -882,18 +882,18 @@ ls -ld "$CG"
 | 상황 | 확인할 내용 |
 | --- | --- |
 | 다운로드 실패 | 다음 실행으로 넘어가지 않고 `curl` 오류와 연결 상태 확인 |
-| 도움말에 1.1.0이 표시됨 | A의 부하 프로그램을 종료하고 00-05~07로 다시 다운로드·확인 |
+| 도움말에 1.1.0이 표시됨 | A의 부하 프로그램을 종료하고 00단계의 다운로드·프로그램 확인을 다시 진행 |
 | `Exec format error` | `uname -m`이 `x86_64`인지 확인 |
 | A에서 실행 파일을 찾지 못함 | `pwd`로 원래 사용자의 `week04` 폴더인지 확인 |
 | B의 그룹 경로가 비어 있음 | A의 그룹 실행 여부와 B의 그룹 이름 확인 |
-| 새 B 창을 열었음 | 01의 B 명령과 05~06에서 변수 재설정, CPU 측정은 준비-08도 다시 실행 |
+| 새 B 창을 열었음 | 01의 B 명령과 05~06에서 변수 재설정, CPU 측정은 측정 함수도 다시 등록 |
 | 프로그램 실행 600초가 지남 | 아래 한도 복원 후 CPU는 09부터, 메모리는 14부터 다시 측정 |
 | `OOMPolicy`가 `continue`가 아님 | A의 부하와 Bash 종료 후 03~19를 다시 진행. 이 속성은 실행 중 변경할 수 없어 그룹 생성 시 지정함 |
-| 종료 후에도 `active`임 | A의 부하·Bash 종료를 확인. 그래도 남으면 B에서 07-01로 남은 PID를 확인하고 참고-02로 실습 그룹 중지 |
+| 종료 후에도 `active`임 | A의 부하·Bash 종료를 확인. 그래도 남으면 B에서 07단계로 남은 PID를 확인하고 아래 그룹 중지 명령 실행 |
 
 CPU·48MiB 메모리 실습을 재측정할 때 **B에서** 초기 한도를 복원합니다.
 
-**명령 참고-01 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemctl set-property --runtime "$UNIT" CPUQuota=100% MemoryMax=128M
@@ -901,7 +901,7 @@ sudo systemctl set-property --runtime "$UNIT" CPUQuota=100% MemoryMax=128M
 
 A에서 정상 종료할 수 없거나 종료 후에도 실습 프로세스가 남았을 때만, **B에서 해당 실습 그룹을 중지**합니다.
 
-**명령 참고-02 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemctl stop "$UNIT"
@@ -909,7 +909,7 @@ sudo systemctl stop "$UNIT"
 
 실행이 끝난 뒤 `failed` 기록만 남았을 때 사용합니다.
 
-**명령 참고-03 · 터미널 B · 호스트 Bash · 일반 사용자**
+**터미널 B · 호스트 Bash · 일반 사용자**
 
 ```bash
 sudo systemctl reset-failed "$UNIT"
