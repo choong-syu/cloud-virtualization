@@ -51,8 +51,6 @@ cd "$HOME/week04"
 
 **터미널 A · 호스트 Bash · 일반 사용자**
 
-![resource-workload 실행 파일의 CPU 부하 생성 및 메모리 사용 개요](images/resource-workload-overview.png)
-
 ```bash
 curl -fL \
   --connect-timeout 15 --max-time 60 --retry 1 \
@@ -68,6 +66,8 @@ curl -fL \
 ```bash
 chmod +x resource-workload
 ```
+
+![resource-workload 실행 파일의 CPU 부하 생성 및 메모리 사용 개요](images/resource-workload-overview.png)
 
 ### 3. 프로그램 확인
 
