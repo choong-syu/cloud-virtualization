@@ -4,9 +4,9 @@
 
 **완성 목표:** 두 namespace의 `eth0`에서 출발한 연결이 각각 veth를 지나 호스트의 같은 bridge에서 만납니다. 큰 바깥 경계는 하나의 Linux VM이며, 안쪽 세 영역은 서로 다른 Network namespace입니다.
 
-두 namespace의 `eth0`에만 실습용 IPv4 주소를 설정합니다. `cv5-br0`, `cv5a-host`, `cv5b-host`에는 이번 실습에서 IPv4 주소를 설정하지 않습니다.
+두 namespace의 `eth0`에만 실습용 IPv4 주소를 설정합니다. `test-br0`, `test-a-host`, `test-b-host`에는 이번 실습에서 IPv4 주소를 설정하지 않습니다.
 
-**단계별 그림 읽기:** 같은 대상은 계속 같은 위치에 표시됩니다. 실습 단계별 그림의 회색 점선은 아직 만들지 않은 부분의 예정 위치이며, 마지막 정리 그림에서는 삭제된 대상을 뜻합니다. `UP`·`enabled`는 활성화 설정을 가리키며, `lo`의 실제 조회 상태는 `UNKNOWN`으로 보일 수 있습니다.
+**단계별 그림 읽기:** 같은 대상은 계속 같은 위치에 표시됩니다. 실습 단계별 그림의 회색 점선은 아직 만들지 않은 부분의 예정 위치이며, 마지막 정리 그림에서는 삭제된 대상을 뜻합니다. `UP`·`활성화`는 활성화 설정을 가리키며, `lo`의 실제 조회 상태는 `UNKNOWN`으로 보일 수 있습니다.
 
 ---
 
@@ -114,7 +114,7 @@ readlink /proc/self/ns/net
 #### 02. (호스트) 첫 번째 Network namespace 생성
 
 ```bash
-sudo ip netns add cv5-ns1
+sudo ip netns add test-ns1
 ```
 
 **명령어 풀이**
@@ -122,12 +122,12 @@ sudo ip netns add cv5-ns1
 - `ip`: Linux의 네트워크 장치·주소·경로·namespace 등을 조회하고 설정하는 명령입니다.
 - `netns`: `ip` 명령 중 Network namespace를 관리하는 하위 명령입니다.
 - `add`: 새로운 Network namespace를 만듭니다.
-- `cv5-ns1`: 이번 실습에서 첫 번째 Network namespace에 붙인 이름입니다.
+- `test-ns1`: 이번 실습에서 첫 번째 Network namespace에 붙인 이름입니다.
 
 #### 03. (호스트) 두 번째 Network namespace 생성
 
 ```bash
-sudo ip netns add cv5-ns2
+sudo ip netns add test-ns2
 ```
 
 **명령어 풀이**
@@ -144,21 +144,21 @@ ip netns list
 **명령어 풀이**
 
 - `ip netns list`: 현재 이름을 붙여 관리하는 Network namespace 목록을 보여 줍니다.
-- `cv5-ns1`, `cv5-ns2`가 각각 보여야 합니다.
+- `test-ns1`, `test-ns2`가 각각 보여야 합니다.
 
 #### 05. (호스트에서 각 namespace 안을 조회) 세 Network namespace 식별값 비교
 
 ```bash
 printf 'host: '; readlink /proc/self/ns/net
-printf 'ns1 : '; sudo ip netns exec cv5-ns1 readlink /proc/self/ns/net
-printf 'ns2 : '; sudo ip netns exec cv5-ns2 readlink /proc/self/ns/net
+printf 'ns1 : '; sudo ip netns exec test-ns1 readlink /proc/self/ns/net
+printf 'ns2 : '; sudo ip netns exec test-ns2 readlink /proc/self/ns/net
 ```
 
 **명령어 풀이**
 
 - `printf`: 글자를 정한 형식으로 출력합니다. 여기서는 각 결과가 어느 환경의 값인지 표시합니다.
 - `ip netns exec 이름 명령`: 지정한 Network namespace 안에서 뒤의 명령을 실행합니다.
-- `cv5-ns1`, `cv5-ns2`: 들어갈 Network namespace의 이름입니다.
+- `test-ns1`, `test-ns2`: 들어갈 Network namespace의 이름입니다.
 - `readlink /proc/self/ns/net`: 그 환경에서 실행된 프로세스의 Network namespace 식별값을 읽습니다.
 
 **확인:** host, ns1, ns2의 식별값이 서로 달라야 합니다.
@@ -168,8 +168,8 @@ printf 'ns2 : '; sudo ip netns exec cv5-ns2 readlink /proc/self/ns/net
 #### 06. (호스트에서 각 namespace 조회) 처음 보이는 네트워크 장치 확인
 
 ```bash
-sudo ip netns exec cv5-ns1 ip -br link
-sudo ip netns exec cv5-ns2 ip -br link
+sudo ip netns exec test-ns1 ip -br link
+sudo ip netns exec test-ns2 ip -br link
 ```
 
 **명령어 풀이**
@@ -200,69 +200,69 @@ Network namespace를 만들었다고 해서 다른 공간으로 이어지는 장
 #### 07. (호스트) 첫 번째 veth pair 생성
 
 ```bash
-sudo ip link add cv5a-host type veth peer name cv5a-ns
+sudo ip link add test-a-host type veth peer name test-a-ns
 ```
 
 **명령어 풀이**
 
 - `ip link add`: 새로운 네트워크 장치를 만듭니다.
-- `cv5a-host`: 첫 번째 끝의 이름입니다. 이 끝은 호스트에 남길 예정입니다.
+- `test-a-host`: 첫 번째 끝의 이름입니다. 이 끝은 호스트에 남길 예정입니다.
 - `type veth`: 만들 장치의 종류를 veth로 지정합니다.
-- `peer name cv5a-ns`: 연결된 반대쪽 끝의 이름을 `cv5a-ns`로 정합니다.
+- `peer name test-a-ns`: 연결된 반대쪽 끝의 이름을 `test-a-ns`로 정합니다.
 - 이 명령 직후에는 두 끝 모두 호스트 Network namespace에 있습니다.
 
-#### 08. (호스트) 한쪽 끝을 `cv5-ns1`로 이동
+#### 08. (호스트) 한쪽 끝을 `test-ns1`로 이동
 
 ```bash
-sudo ip link set cv5a-ns netns cv5-ns1
+sudo ip link set test-a-ns netns test-ns1
 ```
 
 **명령어 풀이**
 
 - `ip link set`: 이미 존재하는 네트워크 장치의 설정을 바꿉니다.
-- `cv5a-ns`: 옮길 veth 끝입니다.
-- `netns cv5-ns1`: 이 장치를 `cv5-ns1` Network namespace로 이동합니다.
+- `test-a-ns`: 옮길 veth 끝입니다.
+- `netns test-ns1`: 이 장치를 `test-ns1` Network namespace로 이동합니다.
 - 프로세스를 옮기는 것이 아니라 **네트워크 인터페이스의 소속 공간을 바꾸는 명령**입니다.
 
-#### 09. (`cv5-ns1`) 이동한 장치 이름을 `eth0`로 변경
+#### 09. (`test-ns1`) 이동한 장치 이름을 `eth0`로 변경
 
 ```bash
-sudo ip netns exec cv5-ns1 ip link set cv5a-ns name eth0
+sudo ip netns exec test-ns1 ip link set test-a-ns name eth0
 ```
 
 **명령어 풀이**
 
-- `ip netns exec cv5-ns1`: 첫 번째 Network namespace 안에서 뒤의 명령을 실행합니다.
-- `ip link set cv5a-ns name eth0`: 장치 이름을 `cv5a-ns`에서 `eth0`로 바꿉니다.
-- 여기의 `eth0`는 `cv5-ns1` 안의 장치 이름입니다. 호스트의 기존 NIC 이름을 바꾸는 것이 아닙니다.
+- `ip netns exec test-ns1`: 첫 번째 Network namespace 안에서 뒤의 명령을 실행합니다.
+- `ip link set test-a-ns name eth0`: 장치 이름을 `test-a-ns`에서 `eth0`로 바꿉니다.
+- 여기의 `eth0`는 `test-ns1` 안의 장치 이름입니다. 호스트의 기존 NIC 이름을 바꾸는 것이 아닙니다.
 
 ### 두 번째 namespace용 veth 만들기
 
 #### 10. (호스트) 두 번째 veth pair 생성
 
 ```bash
-sudo ip link add cv5b-host type veth peer name cv5b-ns
+sudo ip link add test-b-host type veth peer name test-b-ns
 ```
 
 **명령어 풀이**
 
 - 첫 번째 veth와 같은 방식으로 두 번째 쌍을 만듭니다.
-- `cv5b-host`는 호스트에 남고, `cv5b-ns`는 뒤에서 `cv5-ns2`로 이동합니다.
+- `test-b-host`는 호스트에 남고, `test-b-ns`는 뒤에서 `test-ns2`로 이동합니다.
 
-#### 11. (호스트) 한쪽 끝을 `cv5-ns2`로 이동
+#### 11. (호스트) 한쪽 끝을 `test-ns2`로 이동
 
 ```bash
-sudo ip link set cv5b-ns netns cv5-ns2
+sudo ip link set test-b-ns netns test-ns2
 ```
 
 **명령어 풀이**
 
-- 두 번째 veth의 namespace 쪽 끝을 `cv5-ns2`로 이동합니다.
+- 두 번째 veth의 namespace 쪽 끝을 `test-ns2`로 이동합니다.
 
-#### 12. (`cv5-ns2`) 이동한 장치 이름을 `eth0`로 변경
+#### 12. (`test-ns2`) 이동한 장치 이름을 `eth0`로 변경
 
 ```bash
-sudo ip netns exec cv5-ns2 ip link set cv5b-ns name eth0
+sudo ip netns exec test-ns2 ip link set test-b-ns name eth0
 ```
 
 **명령어 풀이**
@@ -270,19 +270,21 @@ sudo ip netns exec cv5-ns2 ip link set cv5b-ns name eth0
 - 두 번째 namespace 안에서도 내부 장치 이름을 `eth0`로 맞춥니다.
 - 서로 다른 Network namespace이므로 두 공간 모두 `eth0`라는 같은 이름을 가질 수 있습니다.
 
+**조회 명령의 `show`:** 조건 없이 전체 목록을 볼 때는 `ip -br link`처럼 생략합니다. 특정 장치 이름이나 `master` 조건을 붙일 때는 `show`가 필요합니다. 뒤의 주소 조회와 `bridge fdb show br ...`도 조건을 사용하므로 `show`를 유지합니다.
+
 #### 13. (호스트와 두 namespace) 현재 장치 위치 확인
 
 ```bash
-ip -br link show cv5a-host
-ip -br link show cv5b-host
-sudo ip netns exec cv5-ns1 ip -br link
-sudo ip netns exec cv5-ns2 ip -br link
+ip -br link show test-a-host
+ip -br link show test-b-host
+sudo ip netns exec test-ns1 ip -br link
+sudo ip netns exec test-ns2 ip -br link
 ```
 
 **명령어 풀이**
 
-- 호스트에서는 `cv5a-host`, `cv5b-host`가 보여야 합니다.
-- `cv5-ns1`과 `cv5-ns2`에서는 각각 `lo`, `eth0`가 보여야 합니다.
+- 호스트에서는 `test-a-host`, `test-b-host`가 보여야 합니다.
+- `test-ns1`과 `test-ns2`에서는 각각 `lo`, `eth0`가 보여야 합니다.
 - 같은 veth pair의 두 끝이 이제 **서로 다른 Network namespace에 배치**된 상태입니다.
 
 현재 구조는 다음과 같습니다.
@@ -301,15 +303,15 @@ veth를 만들었다고 IPv4 통신 준비가 끝난 것은 아닙니다. **두 
 
 이번에는 두 namespace가 같은 IPv4 서브넷을 사용합니다.
 
-- `cv5-ns1/eth0` → `10.203.0.2/24`
-- `cv5-ns2/eth0` → `10.203.0.3/24`
+- `test-ns1/eth0` → `10.203.0.2/24`
+- `test-ns2/eth0` → `10.203.0.3/24`
 
 `/24`는 앞의 24비트를 네트워크 부분으로 사용한다는 뜻이며, 두 주소는 같은 `10.203.0.0/24` 네트워크에 속합니다.
 
-#### 14. (`cv5-ns1`) IP 주소 지정
+#### 14. (`test-ns1`) IP 주소 지정
 
 ```bash
-sudo ip netns exec cv5-ns1 ip address add 10.203.0.2/24 dev eth0
+sudo ip netns exec test-ns1 ip address add 10.203.0.2/24 dev eth0
 ```
 
 **명령어 풀이**
@@ -318,10 +320,10 @@ sudo ip netns exec cv5-ns1 ip address add 10.203.0.2/24 dev eth0
 - `10.203.0.2/24`: 첫 번째 namespace가 사용할 IPv4 주소와 prefix 길이입니다.
 - `dev eth0`: 주소를 붙일 네트워크 인터페이스를 지정합니다.
 
-#### 15. (`cv5-ns2`) IP 주소 지정
+#### 15. (`test-ns2`) IP 주소 지정
 
 ```bash
-sudo ip netns exec cv5-ns2 ip address add 10.203.0.3/24 dev eth0
+sudo ip netns exec test-ns2 ip address add 10.203.0.3/24 dev eth0
 ```
 
 **명령어 풀이**
@@ -331,10 +333,10 @@ sudo ip netns exec cv5-ns2 ip address add 10.203.0.3/24 dev eth0
 #### 16. (두 namespace) `lo`와 `eth0` 활성화
 
 ```bash
-sudo ip netns exec cv5-ns1 ip link set lo up
-sudo ip netns exec cv5-ns1 ip link set eth0 up
-sudo ip netns exec cv5-ns2 ip link set lo up
-sudo ip netns exec cv5-ns2 ip link set eth0 up
+sudo ip netns exec test-ns1 ip link set lo up
+sudo ip netns exec test-ns1 ip link set eth0 up
+sudo ip netns exec test-ns2 ip link set lo up
+sudo ip netns exec test-ns2 ip link set eth0 up
 ```
 
 **명령어 풀이**
@@ -347,8 +349,8 @@ sudo ip netns exec cv5-ns2 ip link set eth0 up
 #### 17. (호스트) 호스트 쪽 veth 끝 활성화
 
 ```bash
-sudo ip link set cv5a-host up
-sudo ip link set cv5b-host up
+sudo ip link set test-a-host up
+sudo ip link set test-b-host up
 ```
 
 **명령어 풀이**
@@ -359,8 +361,8 @@ sudo ip link set cv5b-host up
 #### 18. (두 namespace) IPv4 주소와 인터페이스 상태 확인
 
 ```bash
-sudo ip netns exec cv5-ns1 ip -4 -br address
-sudo ip netns exec cv5-ns2 ip -4 -br address
+sudo ip netns exec test-ns1 ip -4 -br address
+sudo ip netns exec test-ns2 ip -4 -br address
 ```
 
 **명령어 풀이**
@@ -374,22 +376,22 @@ sudo ip netns exec cv5-ns2 ip -4 -br address
 
 두 namespace에 같은 서브넷의 IP 주소도 있고 각 `eth0`도 활성화되어 있습니다. 그런데 **두 veth의 호스트 쪽 끝은 아직 서로 연결되지 않았습니다.**
 
-#### 19. (`cv5-ns1` → `cv5-ns2`) Bridge 전 ping
+**ping 종료 방법:** 이번 실습의 모든 `ping`은 옵션 없이 목적지 IP만 지정합니다. 응답을 몇 번 받거나, 약 5초 동안 응답이 없음을 확인하면 **Ctrl+C**를 눌러 종료하고 통계를 확인합니다. 오류 메시지가 나오더라도 계속 실행될 수 있으므로 다음 명령 전에 종료합니다.
+
+#### 19. (`test-ns1` → `test-ns2`) Bridge 전 ping
 
 ```bash
-sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
+sudo ip netns exec test-ns1 ping 10.203.0.3
 ```
 
 **명령어 풀이**
 
 - `ping`: ICMP Echo Request/Reply를 이용하여 IP 통신 가능 여부를 확인합니다.
-- `-c 2`: 요청을 두 번 보낸 뒤 종료합니다.
-- `-W 1`: 응답이 전혀 없을 때의 응답 대기값을 1초로 지정합니다. 응답을 받은 경우에는 다른 대기 규칙이 적용되므로, 명령 전체가 반드시 1초 안에 끝난다거나 패킷마다 고정된 1초 마감이 생긴다는 뜻은 아닙니다.
 - `10.203.0.3`: 두 번째 Network namespace의 `eth0` 주소입니다.
 
 **예상 결과: 실패가 정상입니다.**
 
-IP 주소가 같은 서브넷에 있다는 사실만으로 **물리적·가상 연결이 자동으로 만들어지는 것은 아닙니다.** 현재 `cv5a-host`와 `cv5b-host` 사이에 Ethernet frame을 전달해 줄 장치가 없습니다.
+IP 주소가 같은 서브넷에 있다는 사실만으로 **물리적·가상 연결이 자동으로 만들어지는 것은 아닙니다.** 현재 `test-a-host`와 `test-b-host` 사이에 Ethernet frame을 전달해 줄 장치가 없습니다.
 
 ![3단계 완료: eth0의 IP와 인터페이스 활성화는 완료됐지만 bridge가 없어 두 veth 사이 통신은 실패](images/week05-03-addresses.png)
 
@@ -405,35 +407,35 @@ IP 주소가 같은 서브넷에 있다는 사실만으로 **물리적·가상 �
 
 **Linux Bridge**는 여러 Ethernet 인터페이스를 하나의 Layer 2 네트워크로 연결하는 Linux 커널 기능입니다. **Layer 2(L2)**는 여기서 Ethernet frame과 MAC 주소를 다루는 계층을 뜻합니다. 개념적으로는 작은 **가상 스위치**처럼 생각할 수 있습니다.
 
-이번에는 호스트에 남아 있는 두 veth 끝 `cv5a-host`, `cv5b-host`를 `cv5-br0`라는 bridge의 포트로 연결합니다.
+이번에는 호스트에 남아 있는 두 veth 끝 `test-a-host`, `test-b-host`를 `test-br0`라는 bridge의 포트로 연결합니다.
 
 #### 20. (호스트) Linux Bridge 생성
 
 ```bash
-sudo ip link add cv5-br0 type bridge
+sudo ip link add test-br0 type bridge
 ```
 
 **명령어 풀이**
 
 - `ip link add`: 새 네트워크 장치를 만듭니다.
-- `cv5-br0`: 이번 실습에서 사용할 bridge 이름입니다.
+- `test-br0`: 이번 실습에서 사용할 bridge 이름입니다.
 - `type bridge`: 종류가 `bridge`인 가상 네트워크 장치를 만듭니다. Bridge도 Linux에서 네트워크 인터페이스로 다뤄집니다.
 
 #### 21. (호스트) 첫 번째 veth 끝을 bridge에 연결
 
 ```bash
-sudo ip link set cv5a-host master cv5-br0
+sudo ip link set test-a-host master test-br0
 ```
 
 **명령어 풀이**
 
-- `master cv5-br0`: `cv5a-host`를 `cv5-br0`가 관리하는 bridge 포트로 연결합니다.
+- `master test-br0`: `test-a-host`를 `test-br0`가 관리하는 bridge 포트로 연결합니다.
 - 여기서 `master`는 이 인터페이스가 어느 상위 네트워크 장치에 속하는지 지정하는 표현입니다.
 
 #### 22. (호스트) 두 번째 veth 끝도 bridge에 연결
 
 ```bash
-sudo ip link set cv5b-host master cv5-br0
+sudo ip link set test-b-host master test-br0
 ```
 
 **명령어 풀이**
@@ -444,31 +446,31 @@ sudo ip link set cv5b-host master cv5-br0
 #### 23. (호스트) bridge 활성화
 
 ```bash
-sudo ip link set cv5-br0 up
+sudo ip link set test-br0 up
 ```
 
 **명령어 풀이**
 
-- `ip link set cv5-br0 up`: 생성한 bridge를 활성화합니다.
+- `ip link set test-br0 up`: 생성한 bridge를 활성화합니다.
 - 이번 실습에서는 bridge에 IPv4 주소를 넣지 않습니다.
 - bridge가 Ethernet frame을 전달하는 것과, 호스트가 이 bridge를 통해 IPv4 통신의 **당사자(송신자 또는 수신자)**로 참여하는 것은 서로 다른 역할입니다. 이번에는 두 namespace 사이의 전달만 확인합니다.
 
 #### 24. (호스트) bridge와 포트 관계 확인
 
 ```bash
-ip link show master cv5-br0
+ip link show master test-br0
 ```
 
 **명령어 풀이**
 
 - `ip link show`: 네트워크 인터페이스의 정보를 보여 줍니다.
-- 이 조회 명령의 `master cv5-br0`: `cv5-br0`에 속한 인터페이스만 골라 보여 줍니다. 앞의 `ip link set ... master ...`와 달리 소속을 바꾸지 않습니다.
-- `cv5a-host`, `cv5b-host`가 보여야 합니다.
+- 이 조회 명령의 `master test-br0`: `test-br0`에 속한 인터페이스만 골라 보여 줍니다. 앞의 `ip link set ... master ...`와 달리 소속을 바꾸지 않습니다.
+- `test-a-host`, `test-b-host`가 보여야 합니다.
 
-#### 25. (`cv5-ns1` → `cv5-ns2`) 같은 ping 다시 실행
+#### 25. (`test-ns1` → `test-ns2`) 같은 ping 다시 실행
 
 ```bash
-sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
+sudo ip netns exec test-ns1 ping 10.203.0.3
 ```
 
 **명령어 풀이**
@@ -476,22 +478,22 @@ sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
 - 명령 19와 **완전히 같은 목적지**로 다시 ping을 보냅니다.
 - IP 주소와 namespace의 `eth0` 설정은 바꾸지 않았고, 중간에 bridge 연결만 추가했습니다.
 
-**예상 결과: 성공합니다.**
+**예상 결과: 성공합니다.** 응답을 몇 번 확인한 뒤 **Ctrl+C**로 종료합니다.
 
 Bridge 전에는 실패했고 Bridge 후에는 성공했다는 비교가 중요합니다.
 
-#### 26. (`cv5-ns2` → `cv5-ns1`) 반대 방향도 확인
+#### 26. (`test-ns2` → `test-ns1`) 반대 방향도 확인
 
 ```bash
-sudo ip netns exec cv5-ns2 ping -c 2 -W 1 10.203.0.2
+sudo ip netns exec test-ns2 ping 10.203.0.2
 ```
 
 **명령어 풀이**
 
 - 두 번째 namespace에서 첫 번째 namespace로 반대 방향의 통신도 확인합니다.
-- `10.203.0.2`는 `cv5-ns1/eth0`의 주소입니다.
+- `10.203.0.2`는 `test-ns1/eth0`의 주소입니다.
 
-**예상 결과:** 응답을 받습니다.
+**예상 결과:** 응답을 받습니다. 확인 후 **Ctrl+C**로 종료합니다.
 
 ![4단계 완료: 두 호스트 veth 끝을 같은 bridge의 포트로 연결하여 양방향 ping 성공](images/week05-04-bridge.png)
 
@@ -510,10 +512,10 @@ Bridge는 들어온 Ethernet frame의 **출발지 MAC 주소**를 관찰하면�
 #### 27. (각 namespace와 호스트) 실제 MAC 주소와 Bridge의 FDB 대응
 
 ```bash
-sudo ip netns exec cv5-ns1 ip -br link show eth0
-sudo ip netns exec cv5-ns2 ip -br link show eth0
-bridge fdb show br cv5-br0
-bridge fdb show br cv5-br0 dynamic
+sudo ip netns exec test-ns1 ip -br link show eth0
+sudo ip netns exec test-ns2 ip -br link show eth0
+bridge fdb show br test-br0
+bridge fdb show br test-br0 dynamic
 ```
 
 **명령어 풀이**
@@ -521,16 +523,16 @@ bridge fdb show br cv5-br0 dynamic
 - `ip -br link show eth0`: 해당 namespace의 `eth0` 상태와 MAC 주소를 짧게 보여 줍니다. 첫 번째 출력은 ns1, 두 번째 출력은 ns2의 값입니다.
 - `bridge`: Linux Bridge의 포트·MAC 학습 상태 등을 조회하거나 설정하는 명령입니다. `iproute2` 패키지에 포함됩니다.
 - `fdb`: Forwarding Database의 약자로, bridge가 MAC 주소와 포트의 관계를 관리하는 표입니다.
-- `show`: 현재 기록을 조회합니다.
-- `br cv5-br0`: `cv5-br0` bridge의 FDB를 확인합니다.
+- `show`: 현재 기록을 조회합니다. 뒤에 `br test-br0`와 같은 조회 조건을 붙일 때 필요합니다.
+- `br test-br0`: `test-br0` bridge의 FDB를 확인합니다.
 - `dynamic`: 동적으로 학습한 항목만 골라 보여 줍니다. 실제 출력 행에 `dynamic`이라는 단어가 항상 표시되는 것은 아닙니다.
 
 **관찰할 대응 관계**
 
 | 앞에서 읽은 실제 MAC 주소 | 학습 항목에서 대응해야 하는 포트 |
 | --- | --- |
-| `cv5-ns1/eth0`의 MAC | `dev cv5a-host` |
-| `cv5-ns2/eth0`의 MAC | `dev cv5b-host` |
+| `test-ns1/eth0`의 MAC | `dev test-a-host` |
+| `test-ns2/eth0`의 MAC | `dev test-b-host` |
 
 먼저 첫 두 명령에서 읽은 `eth0` MAC을 기록하고, 마지막 `dynamic` 조회 결과에서 **같은 값을 찾아 포트를 대응**시킵니다. MAC 주소의 숫자를 외울 필요는 없습니다. 호스트 쪽 veth 자체의 MAC 주소를 내부 `eth0`의 MAC 주소와 혼동하지 않습니다.
 
@@ -540,16 +542,16 @@ bridge fdb show br cv5-br0 dynamic
 
 > IP는 “누구와 통신할 것인가”를 나타내는 주소이고, 같은 L2 네트워크에서 실제 Ethernet frame을 어느 포트로 전달할지 판단할 때는 MAC 주소 정보가 사용됩니다. 이번에는 이 연결 관계만 이해하면 충분합니다.
 
-![5단계 관찰: 내부 eth0의 MAC A와 MAC B가 각각 cv5a-host와 cv5b-host로 학습되는 FDB 대응](images/week05-05-fdb.png)
+![5단계 관찰: 내부 eth0의 MAC A와 MAC B가 각각 test-a-host와 test-b-host로 학습되는 FDB 대응](images/week05-05-fdb.png)
 
 **현재 위치 — 명령 27까지:** 새 장치를 만드는 대신 완성된 연결에서 bridge의 학습 결과를 읽습니다. `MAC A`·`MAC B`는 각 내부 `eth0`의 실제 MAC을 대신한 기호입니다. 그림의 두 행은 대응 관계의 예시이며, 실제 FDB 전체가 두 행뿐이라는 뜻은 아닙니다.
 
 #### 28. (호스트) bridge와 host-side 포트에 IPv4 주소가 없는지 확인
 
 ```bash
-ip -4 -br address show cv5-br0
-ip -4 -br address show cv5a-host
-ip -4 -br address show cv5b-host
+ip -4 -br address show test-br0
+ip -4 -br address show test-a-host
+ip -4 -br address show test-b-host
 ```
 
 **명령어 풀이**
@@ -572,7 +574,7 @@ ip -4 -br address show cv5b-host
 #### 29. (호스트) 첫 번째 bridge 포트 내리기
 
 ```bash
-sudo ip link set cv5a-host down
+sudo ip link set test-a-host down
 ```
 
 **명령어 풀이**
@@ -580,26 +582,26 @@ sudo ip link set cv5a-host down
 - `down`: 장치를 삭제하지 않고 사용할 수 없는 상태로 바꿉니다.
 - namespace, IP 주소, bridge 자체는 그대로 남습니다.
 
-#### 30. (`cv5-ns1` → `cv5-ns2`) 같은 ping 다시 실행
+#### 30. (`test-ns1` → `test-ns2`) 같은 ping 다시 실행
 
 ```bash
-sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
+sudo ip netns exec test-ns1 ping 10.203.0.3
 ```
 
 **명령어 풀이**
 
 - 앞과 같은 주소로 다시 ping을 보냅니다.
-- **예상 결과: 실패가 정상입니다.**
-- 바꾼 것은 `cv5a-host`의 연결 상태 하나뿐입니다.
+- **예상 결과: 실패가 정상입니다.** 약 5초 동안 응답이 없음을 확인한 뒤 **Ctrl+C**로 종료합니다.
+- 바꾼 것은 `test-a-host`의 연결 상태 하나뿐입니다.
 
-![6단계 중단 상태: cv5a-host만 관리 DOWN, 내부 eth0는 관리 UP이지만 링크 DOWN, IP와 장치는 그대로 유지](images/week05-06-port-down.png)
+![6단계 중단 상태: test-a-host만 관리 DOWN, 내부 eth0는 관리 UP이지만 링크 DOWN, IP와 장치는 그대로 유지](images/week05-06-port-down.png)
 
-**현재 위치 — 명령 30까지:** `cv5a-host`만 비활성화했습니다. 반대쪽 `eth0`도 실제 링크는 내려가지만, 활성화 설정과 IP 주소는 남아 있습니다. 회색 연결은 사라진 장치가 아니라 현재 사용할 수 없는 연결입니다.
+**현재 위치 — 명령 30까지:** `test-a-host`만 비활성화했습니다. 반대쪽 `eth0`도 실제 링크는 내려가지만, 활성화 설정과 IP 주소는 남아 있습니다. 회색 연결은 사라진 장치가 아니라 현재 사용할 수 없는 연결입니다.
 
 #### 31. (호스트) 같은 bridge 포트 다시 올리기
 
 ```bash
-sudo ip link set cv5a-host up
+sudo ip link set test-a-host up
 ```
 
 **명령어 풀이**
@@ -607,19 +609,19 @@ sudo ip link set cv5a-host up
 - `up`: 내려 두었던 같은 인터페이스를 다시 활성화합니다.
 - veth를 새로 만들거나 IP 주소를 다시 지정하지 않습니다.
 
-#### 32. (`cv5-ns1` → `cv5-ns2`) 재설정 없이 통신 복구 확인
+#### 32. (`test-ns1` → `test-ns2`) 재설정 없이 통신 복구 확인
 
 ```bash
-sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
+sudo ip netns exec test-ns1 ping 10.203.0.3
 ```
 
 **명령어 풀이**
 
 - 같은 namespace, 같은 `eth0`, 같은 IP 주소를 사용합니다.
-- **예상 결과: 다시 성공합니다.**
+- **예상 결과: 다시 성공합니다.** 응답 확인 후 **Ctrl+C**로 종료합니다.
 - IP 설정과 연결 상태는 서로 다른 조건임을 확인합니다.
 
-![6단계 복구 상태: 같은 cv5a-host를 다시 UP으로 바꾸어 동일한 장치와 IP 주소로 통신 복구](images/week05-07-port-restored.png)
+![6단계 복구 상태: 같은 test-a-host를 다시 UP으로 바꾸어 동일한 장치와 IP 주소로 통신 복구](images/week05-07-port-restored.png)
 
 **현재 위치 — 명령 32까지:** 내려 두었던 같은 포트만 다시 활성화했습니다. namespace·veth·IP를 새로 만들거나 다시 설정하지 않고 ping 응답이 돌아왔습니다.
 
@@ -636,51 +638,51 @@ sudo ip netns exec cv5-ns1 ping -c 2 -W 1 10.203.0.3
 #### 33. (호스트) 첫 번째 Network namespace 삭제
 
 ```bash
-sudo ip netns delete cv5-ns1
+sudo ip netns delete test-ns1
 ```
 
 **명령어 풀이**
 
 - `ip netns delete`: 지정한 Network namespace의 **이름과 그 이름이 잡고 있던 참조**를 제거합니다.
-- 실행 중인 프로세스나 열린 참조가 더 이상 없다면 namespace가 실제로 해제됩니다. 이때 `cv5-ns1` 안의 veth 끝이 사라지면서 반대쪽 `cv5a-host`도 함께 정리됩니다.
+- 실행 중인 프로세스나 열린 참조가 더 이상 없다면 namespace가 실제로 해제됩니다. 이때 `test-ns1` 안의 veth 끝이 사라지면서 반대쪽 `test-a-host`도 함께 정리됩니다.
 - 이름을 지우는 명령이 그 안의 프로그램을 자동으로 종료시키는 것은 아닙니다. 추가로 실행해 둔 프로그램이 있으면 먼저 종료해야 합니다.
 
 #### 34. (호스트) 두 번째 Network namespace 삭제
 
 ```bash
-sudo ip netns delete cv5-ns2
+sudo ip netns delete test-ns2
 ```
 
 **명령어 풀이**
 
-- 두 번째 Network namespace의 이름도 제거합니다. 남은 참조가 없다면 내부 `eth0`와 반대쪽 `cv5b-host`도 함께 정리됩니다.
+- 두 번째 Network namespace의 이름도 제거합니다. 남은 참조가 없다면 내부 `eth0`와 반대쪽 `test-b-host`도 함께 정리됩니다.
 - 지정한 실습용 namespace를 정리하며 호스트의 기본 Network namespace를 삭제하는 명령이 아닙니다.
 
 #### 35. (호스트) Linux Bridge 삭제
 
 ```bash
-sudo ip link delete cv5-br0
+sudo ip link delete test-br0
 ```
 
 **명령어 풀이**
 
 - `ip link delete`: 지정한 가상 네트워크 장치를 삭제합니다.
-- 여기서는 이번에 만든 `cv5-br0`만 삭제합니다.
+- 여기서는 이번에 만든 `test-br0`만 삭제합니다.
 
 #### 36. (호스트) 실습 자원이 모두 사라졌는지 확인
 
 ```bash
 ip netns list
-ip link show cv5-br0
-ip link show cv5a-host
-ip link show cv5b-host
+ip link show test-br0
+ip link show test-a-host
+ip link show test-b-host
 ```
 
 **명령어 풀이**
 
-- `ip netns list`: `cv5-ns1`, `cv5-ns2`가 더 이상 보이지 않아야 합니다.
+- `ip netns list`: `test-ns1`, `test-ns2`가 더 이상 보이지 않아야 합니다.
 - `ip link show 이름`: 해당 장치가 존재하는지 확인합니다.
-- `cv5-br0`, `cv5a-host`, `cv5b-host`가 없다는 메시지가 나오는 것이 정상 정리 결과입니다.
+- `test-br0`, `test-a-host`, `test-b-host`가 없다는 메시지가 나오는 것이 정상 정리 결과입니다.
 
 ![7단계 완료: 실습 namespace 두 개와 veth 및 bridge는 삭제되고 기존 호스트 네트워크만 유지](images/week05-08-cleanup.png)
 
@@ -726,34 +728,34 @@ ip -br link
 ### 중간에 중단한 실습을 정리하고 다시 시작하려면
 
 1. 실행 중인 실습 명령을 마친 뒤, 위의 조회 결과에서 **실제로 남아 있는 이번 실습의 이름**을 확인합니다.
-2. `cv5-ns1`, `cv5-ns2`, `cv5-br0` 중 존재하는 대상에만 정상 정리의 **명령 33~35**를 적용합니다. 없는 대상은 건너뜁니다.
-3. `ip -br link`로 호스트 장치를 다시 확인합니다. veth를 만든 뒤 namespace로 옮기기 전에 중단했다면, namespace를 지워도 `cv5a-host`·`cv5b-host`가 남을 수 있습니다.
+2. `test-ns1`, `test-ns2`, `test-br0` 중 존재하는 대상에만 정상 정리의 **명령 33~35**를 적용합니다. 없는 대상은 건너뜁니다.
+3. `ip -br link`로 호스트 장치를 다시 확인합니다. veth를 만든 뒤 namespace로 옮기기 전에 중단했다면, namespace를 지워도 `test-a-host`·`test-b-host`가 남을 수 있습니다.
 
 이 경우 **남아 있는 실습 장치에 해당하는 줄만** 실행합니다.
 
 ```bash
-sudo ip link delete cv5a-host
-sudo ip link delete cv5b-host
+sudo ip link delete test-a-host
+sudo ip link delete test-b-host
 ```
 
 **명령어 풀이**
 
 - `ip link delete 이름`: 지정한 가상 네트워크 장치를 삭제합니다.
-- veth 한쪽 끝을 삭제하면 반대쪽 끝도 함께 삭제됩니다. 이동 전의 `cv5a-ns`·`cv5b-ns`도 해당 쌍과 함께 제거됩니다.
+- veth 한쪽 끝을 삭제하면 반대쪽 끝도 함께 삭제됩니다. 이동 전의 `test-a-ns`·`test-b-ns`도 해당 쌍과 함께 제거됩니다.
 - 장치를 찾을 수 없다는 메시지는 해당 이름이 현재 없다는 뜻입니다. 다른 이름을 추측하여 삭제하지 않습니다.
 
-마지막으로 **명령 36**과 `ip -br link`로 두 namespace 이름과 실습 장치가 사라졌는지 확인한 뒤 1단계부터 다시 시작합니다. 실습용 이름은 `cv5-ns1`, `cv5-ns2`, `cv5-br0`, `cv5a-host`, `cv5b-host`, `cv5a-ns`, `cv5b-ns`입니다. 정리 뒤에도 남아 있으면 교수자와 확인합니다.
+마지막으로 **명령 36**과 `ip -br link`로 두 namespace 이름과 실습 장치가 사라졌는지 확인한 뒤 1단계부터 다시 시작합니다. 실습용 이름은 `test-ns1`, `test-ns2`, `test-br0`, `test-a-host`, `test-b-host`, `test-a-ns`, `test-b-ns`입니다. 정리 뒤에도 남아 있으면 교수자와 확인합니다.
 
 ### namespace 안에 `eth0`가 보이지 않음
 
 ```bash
-sudo ip netns exec cv5-ns1 ip -br link
-sudo ip netns exec cv5-ns2 ip -br link
+sudo ip netns exec test-ns1 ip -br link
+sudo ip netns exec test-ns2 ip -br link
 ```
 
 **명령어 풀이**
 
-- `ip netns exec cv5-ns1 ...`, `ip netns exec cv5-ns2 ...`: 각각의 Network namespace에서 조회 명령을 실행합니다.
+- `ip netns exec test-ns1 ...`, `ip netns exec test-ns2 ...`: 각각의 Network namespace에서 조회 명령을 실행합니다.
 - `ip -br link`: 각 namespace가 현재 가지고 있는 네트워크 인터페이스 이름과 상태를 간단히 보여 줍니다.
 - 설정을 바꾸는 명령이 아니라 현재 상태를 확인하는 조회 명령입니다.
 
@@ -768,26 +770,26 @@ sudo ip netns exec cv5-ns2 ip -br link
 다음 순서로 확인합니다.
 
 ```bash
-sudo ip netns exec cv5-ns1 ip -4 -br address
-sudo ip netns exec cv5-ns2 ip -4 -br address
-ip link show master cv5-br0
-ip -br link show cv5-br0
-ip -br link show cv5a-host
-ip -br link show cv5b-host
+sudo ip netns exec test-ns1 ip -4 -br address
+sudo ip netns exec test-ns2 ip -4 -br address
+ip link show master test-br0
+ip -br link show test-br0
+ip -br link show test-a-host
+ip -br link show test-b-host
 ```
 
 **명령어 풀이**
 
 - `ip -4 -br address`: 각 namespace의 인터페이스 상태와 IPv4 주소를 확인합니다.
-- `ip link show master cv5-br0`: `cv5-br0`에 실제로 어떤 포트가 연결되어 있는지 확인합니다.
+- `ip link show master test-br0`: `test-br0`에 실제로 어떤 포트가 연결되어 있는지 확인합니다.
 - `ip -br link show 장치`: bridge와 각 host-side veth가 `UP` 상태인지 확인합니다.
 - 모두 조회 명령이며, 문제 원인을 확인하기 전에 설정을 반복해서 덮어쓰지 않기 위한 단계입니다.
 
 확인할 내용:
 
-1. `cv5-ns1/eth0` → `10.203.0.2/24`
-2. `cv5-ns2/eth0` → `10.203.0.3/24`
-3. `cv5a-host`, `cv5b-host`가 `cv5-br0`의 포트로 표시됨
-4. `cv5-br0`, 두 host-side veth가 활성화되어 있음
+1. `test-ns1/eth0` → `10.203.0.2/24`
+2. `test-ns2/eth0` → `10.203.0.3/24`
+3. `test-a-host`, `test-b-host`가 `test-br0`의 포트로 표시됨
+4. `test-br0`, 두 host-side veth가 활성화되어 있음
 
 학교 VM의 방화벽 정책이 실습 트래픽을 차단하는 경우에는 교수자가 해당 실습 인터페이스 범위만 확인합니다. **방화벽 전체 끄기, 규칙 전체 삭제, Netplan 수정은 복구 방법으로 사용하지 않습니다.**
