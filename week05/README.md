@@ -38,13 +38,15 @@
 | `ip` | Network namespace·인터페이스·주소 구성과 조회 | `iproute2` |
 | `bridge` | Linux Bridge의 포트와 학습 정보 조회 | `iproute2` |
 | `ping` | 상대에게 요청을 보내 응답 여부 확인 | `iputils-ping` |
+| `lsns` | 시스템에서 확인 가능한 namespace 조회 | `util-linux` |
 
-호스트 터미널에서 다음 세 줄을 실행합니다. 앞에 `sudo`를 붙이지 않습니다.
+호스트 터미널에서 다음 네 줄을 실행합니다. 앞에 `sudo`를 붙이지 않습니다.
 
 ```bash
 command -v ip
 command -v bridge
 command -v ping
+command -v lsns
 ```
 
 **명령어 풀이**
@@ -75,6 +77,12 @@ sudo apt install iproute2
 sudo apt install iputils-ping
 ```
 
+- `lsns`가 없을 때:
+
+```bash
+sudo apt install util-linux
+```
+
 **명령어 풀이**
 
 - `sudo`: 관리자 권한으로 뒤의 명령을 실행합니다.
@@ -82,7 +90,7 @@ sudo apt install iputils-ping
 - `update`: 설치 가능한 패키지 목록을 갱신합니다. 설치된 모든 프로그램을 업그레이드하는 명령은 아닙니다.
 - `install 패키지명`: 지정한 패키지를 설치합니다. 계속 진행할지 묻는 경우 내용을 확인하고 `Y`를 입력한 뒤 Enter를 누릅니다.
 
-설치가 끝나면 위의 `command -v` 세 줄을 다시 실행합니다. 모두 경로가 나오면 1단계로 진행합니다. 설치가 실패하거나 여전히 경로가 나오지 않으면 오류 메시지를 교수자에게 보여 줍니다.
+설치가 끝나면 위의 `command -v` 네 줄을 다시 실행합니다. 모두 경로가 나오면 1단계로 진행합니다. 설치가 실패하거나 여전히 경로가 나오지 않으면 오류 메시지를 교수자에게 보여 줍니다.
 
 패키지를 내려받을 때는 VM의 기존 패키지 저장소 연결을 사용합니다. 이번 실습에서 만들 Network namespace를 인터넷에 연결하는 과정은 아닙니다. 설치 절차는 [Ubuntu의 패키지 관리 안내](https://ubuntu.com/server/docs/how-to/software/package-management/)를 따릅니다.
 
@@ -165,6 +173,21 @@ printf 'ns2 : '; sudo ip netns exec test-ns2 readlink /proc/self/ns/net
 
 > `ip netns exec`는 프로그램이 **지정한 Network namespace를 사용하도록 실행**합니다. 이때 namespace별 설정 파일을 처리하기 위한 보조 Mount namespace도 생성합니다. 그러나 별도 rootfs·UTS·PID 격리나 cgroup 제한을 구성하는 것은 아닙니다. 따라서 3·4주차의 실행 환경 전체를 다시 만든 것은 아닙니다.
 
+**시스템에서 확인 가능한 Network namespace 조회**
+
+```bash
+sudo lsns -t net
+```
+
+- `lsns`: 시스템에서 확인 가능한 namespace 정보를 나열합니다.
+- `-t net`: Network namespace만 골라 봅니다.
+- `NS` 열은 namespace 식별값입니다. 명령 05에서 기록한 호스트의 `net:[숫자]`와 같은 값을 찾아 봅니다.
+- `NPROCS`는 그 공간에 속한 프로세스 수이며, `PID`·`COMMAND`는 대표 프로세스의 정보입니다. namespace 이름이나 IP 주소가 아닙니다.
+- 학생 VM에서는 호스트 공간과 함께 `NPROCS`가 `0`인 두 실습 공간도 표시됩니다. `NSFS` 열의 `/run/netns/test-ns1`, `/run/netns/test-ns2`를 명령 05의 식별값과 대응해 봅니다.
+- 실행 중인 프로세스가 없는 이름 있는 namespace는 `lsns` 버전과 조회 환경에 따라 목록에서 빠질 수 있습니다. `test-ns1`·`test-ns2`가 안 보인다고 생성 실패로 판단하지 않습니다. 이름 목록은 명령 04의 `ip netns list`, 각 공간의 식별값은 명령 05로 확인합니다.
+
+**지금 확인:** 호스트의 기본 Network namespace는 `ip netns list`에 이름으로 나타나지 않아도, 호스트 프로세스가 사용하는 공간으로 `lsns`에서 확인할 수 있습니다.
+
 #### 06. (호스트에서 각 namespace 조회) 처음 보이는 네트워크 장치 확인
 
 ```bash
@@ -211,6 +234,26 @@ sudo ip link add test-a-host type veth peer name test-a-ns
 - `peer name test-a-ns`: 연결된 반대쪽 끝의 이름을 `test-a-ns`로 정합니다.
 - 이 명령 직후에는 두 끝 모두 호스트 Network namespace에 있습니다.
 
+**생성 직후, 호스트에 두 끝이 추가되었는지 확인합니다.**
+
+```bash
+ip -br link
+```
+
+기존 `lo`와 호스트 NIC 외에 다음 두 행이 추가됩니다. 아래 MAC 주소는 예시이며 실제 값과 출력 순서는 달라질 수 있습니다.
+
+```text
+test-a-ns@test-a-host DOWN           a2:28:5e:f3:0a:2f <BROADCAST,MULTICAST,M-DOWN>
+test-a-host@test-a-ns DOWN           ea:a2:a9:f0:c2:cf <BROADCAST,MULTICAST,M-DOWN>
+```
+
+- `@` 앞은 조회 중인 인터페이스의 이름이고, 뒤는 연결된 반대쪽 끝입니다. `test-a-ns@test-a-host`는 `test-a-ns`가 `test-a-host`와 한 쌍이라는 뜻입니다.
+- `DOWN`: 현재 링크의 운용 상태입니다. 지금은 두 끝 모두 아직 활성화하지 않았습니다.
+- `a2:...`, `ea:...`: 각 끝의 MAC 주소입니다. IP 주소가 아닙니다.
+- `BROADCAST`·`MULTICAST`: 브로드캐스트·멀티캐스트를 지원하는 장치라는 표시이며, 통신 성공을 뜻하지 않습니다.
+- 이 veth 예시의 `M-DOWN`은 연결된 반대쪽 끝이 내려가 있음을 나타냅니다. 출력 플래그는 환경에 따라 달라질 수 있습니다.
+- 두 끝이 같은 호스트 공간에 있으므로 지금은 상대 이름이 보입니다. 다른 공간으로 이동한 뒤에는 `@if숫자`처럼 상대 인터페이스의 번호로 표시될 수 있습니다.
+
 #### 08. (호스트) 한쪽 끝을 `test-ns1`로 이동
 
 ```bash
@@ -224,6 +267,22 @@ sudo ip link set test-a-ns netns test-ns1
 - `netns test-ns1`: 이 장치를 `test-ns1` Network namespace로 이동합니다.
 - 프로세스를 옮기는 것이 아니라 **네트워크 인터페이스의 소속 공간을 바꾸는 명령**입니다.
 
+**이동 후, 호스트 목록을 다시 확인합니다.**
+
+```bash
+ip -br link
+```
+
+`test-a-host`는 남아 있고, `test-a-ns`는 호스트 목록에서 사라져야 합니다. 삭제한 것이 아니라 소속 공간을 바꾼 결과입니다.
+
+**이름을 바꾸기 전에, 이동한 공간에서 같은 장치를 찾습니다.**
+
+```bash
+sudo ip netns exec test-ns1 ip -br link
+```
+
+`lo`와 `test-a-ns@if숫자`가 보여야 합니다. 앞에서 기록한 `test-a-ns`의 MAC 주소도 비교해 봅니다. 아직 장치 이름은 `eth0`가 아닙니다.
+
 #### 09. (`test-ns1`) 이동한 장치 이름을 `eth0`로 변경
 
 ```bash
@@ -235,6 +294,14 @@ sudo ip netns exec test-ns1 ip link set test-a-ns name eth0
 - `ip netns exec test-ns1`: 첫 번째 Network namespace 안에서 뒤의 명령을 실행합니다.
 - `ip link set test-a-ns name eth0`: 장치 이름을 `test-a-ns`에서 `eth0`로 바꿉니다.
 - 여기의 `eth0`는 `test-ns1` 안의 장치 이름입니다. 호스트의 기존 NIC 이름을 바꾸는 것이 아닙니다.
+
+**이름을 바꾼 결과를 확인합니다.**
+
+```bash
+sudo ip netns exec test-ns1 ip -br link
+```
+
+`test-a-ns` 대신 `eth0@if숫자`가 보이고 상태는 여전히 `DOWN`입니다. MAC 주소는 이름 변경 전과 같아야 합니다. 이름 변경만으로 주소가 설정되거나 장치가 활성화되지는 않습니다.
 
 ### 두 번째 namespace용 veth 만들기
 
@@ -272,19 +339,16 @@ sudo ip netns exec test-ns2 ip link set test-b-ns name eth0
 
 **조회 명령의 `show`:** 조건 없이 전체 목록을 볼 때는 `ip -br link`처럼 생략합니다. 특정 장치 이름이나 `master` 조건을 붙일 때는 `show`가 필요합니다. 뒤의 주소 조회와 `bridge fdb show br ...`도 조건을 사용하므로 `show`를 유지합니다.
 
-#### 13. (호스트와 두 namespace) 현재 장치 위치 확인
+#### 13. (호스트) 호스트에 남은 veth 끝 확인
 
 ```bash
-ip -br link show test-a-host
-ip -br link show test-b-host
-sudo ip netns exec test-ns1 ip -br link
-sudo ip netns exec test-ns2 ip -br link
+ip -br link
 ```
 
-**명령어 풀이**
+**확인할 내용**
 
-- 호스트에서는 `test-a-host`, `test-b-host`가 보여야 합니다.
-- `test-ns1`과 `test-ns2`에서는 각각 `lo`, `eth0`가 보여야 합니다.
+- 기존 호스트 장치 외에 `test-a-host`, `test-b-host`가 보이며 아직 `DOWN`입니다.
+- `test-a-ns`, `test-b-ns`는 호스트 목록에 없습니다. 각각 다른 namespace로 이동했고 그 안에서 `eth0`로 이름을 바꿨습니다.
 - 같은 veth pair의 두 끝이 이제 **서로 다른 Network namespace에 배치**된 상태입니다.
 
 현재 구조는 다음과 같습니다.
@@ -308,7 +372,23 @@ veth를 만들었다고 IPv4 통신 준비가 끝난 것은 아닙니다. **두 
 
 `/24`는 앞의 24비트를 네트워크 부분으로 사용한다는 뜻이며, 두 주소는 같은 `10.203.0.0/24` 네트워크에 속합니다.
 
-#### 14. (`test-ns1`) IP 주소 지정
+### 주소를 넣기 전, 두 namespace를 각각 조회하기
+
+먼저 첫 번째 공간을 확인합니다.
+
+```bash
+sudo ip netns exec test-ns1 ip address
+```
+
+이어서 두 번째 공간을 확인합니다.
+
+```bash
+sudo ip netns exec test-ns2 ip address
+```
+
+각 공간에 `lo`와 `eth0`가 있지만 아직 실습용 IPv4 주소를 나타내는 `inet 10.203.0.x/24` 행이 없습니다. `eth0`의 `state DOWN`도 확인합니다. `link/ether` 뒤의 MAC 주소를 IP 주소로 읽지 않습니다.
+
+#### 14. (`test-ns1`) IP 주소 지정 후, 주소와 DOWN 상태 확인
 
 ```bash
 sudo ip netns exec test-ns1 ip address add 10.203.0.2/24 dev eth0
@@ -316,61 +396,97 @@ sudo ip netns exec test-ns1 ip address add 10.203.0.2/24 dev eth0
 
 **명령어 풀이**
 
-- `ip address add`: 인터페이스에 IPv4/IPv6 주소를 추가합니다.
-- `10.203.0.2/24`: 첫 번째 namespace가 사용할 IPv4 주소와 prefix 길이입니다.
-- `dev eth0`: 주소를 붙일 네트워크 인터페이스를 지정합니다.
+- `ip address add`: 인터페이스에 주소를 추가합니다.
+- `10.203.0.2/24`: 첫 번째 namespace의 IPv4 주소와 프리픽스 길이입니다.
+- `dev eth0`: 주소를 붙일 인터페이스를 지정합니다.
 
-#### 15. (`test-ns2`) IP 주소 지정
+설정 결과를 조회합니다.
 
 ```bash
-sudo ip netns exec test-ns2 ip address add 10.203.0.3/24 dev eth0
+sudo ip netns exec test-ns1 ip address
 ```
 
-**명령어 풀이**
+**확인:** `eth0` 아래에 `inet 10.203.0.2/24`가 생겼지만 `state DOWN`입니다. **주소 설정만으로 인터페이스가 활성화되지는 않습니다.**
 
-- 두 번째 namespace의 `eth0`에 같은 서브넷의 다른 주소를 설정합니다.
+#### 15. (`test-ns1`과 호스트) 첫 번째 veth 양쪽 끝을 차례로 활성화
 
-#### 16. (두 namespace) `lo`와 `eth0` 활성화
+먼저 첫 번째 namespace의 자기 통신용 `lo`를 활성화합니다.
 
 ```bash
 sudo ip netns exec test-ns1 ip link set lo up
-sudo ip netns exec test-ns1 ip link set eth0 up
-sudo ip netns exec test-ns2 ip link set lo up
-sudo ip netns exec test-ns2 ip link set eth0 up
 ```
 
-**명령어 풀이**
+이어서 내부 `eth0`를 활성화합니다.
 
-- `ip link set 장치 up`: 지정한 네트워크 인터페이스를 사용할 수 있는 상태로 활성화합니다.
-- `lo`: 각 namespace의 자기 자신 통신용 loopback입니다.
-- `eth0`: 각 namespace에서 외부 연결에 사용할 veth 끝입니다.
-- **주소 설정과 인터페이스 활성화는 서로 다른 설정**입니다.
+```bash
+sudo ip netns exec test-ns1 ip link set eth0 up
+```
 
-#### 17. (호스트) 호스트 쪽 veth 끝 활성화
+현재 상태를 확인합니다.
+
+```bash
+sudo ip netns exec test-ns1 ip address
+```
+
+**확인:** `eth0`의 `<...>` 안에 `UP`이 생기지만, 반대쪽 `test-a-host`가 아직 내려가 있으므로 `state LOWERLAYERDOWN` 또는 `state DOWN`으로 보일 수 있습니다. `LOWERLAYERDOWN`은 연결을 받쳐 주는 하위 링크가 내려가 있다는 뜻입니다. `NO-CARRIER`도 나타날 수 있습니다. **활성화 설정인 `UP` 플래그와 실제 링크의 `state`는 구분합니다.** `lo`는 활성화해도 운용 상태가 `UNKNOWN`으로 보일 수 있습니다.
+
+호스트 쪽 끝도 활성화합니다. 이 명령은 호스트 터미널에서 실행합니다.
 
 ```bash
 sudo ip link set test-a-host up
+```
+
+첫 번째 namespace를 다시 조회합니다.
+
+```bash
+sudo ip netns exec test-ns1 ip address
+```
+
+**확인:** 이제 `eth0`는 `state UP`이고 `UP,LOWER_UP` 플래그가 보입니다. `inet 10.203.0.2/24`도 그대로 있습니다. veth는 **양쪽 끝을 활성화해야 링크가 올라갑니다.** 아직 두 namespace 사이의 Bridge 연결은 없습니다.
+
+#### 16. (`test-ns2`와 호스트) 두 번째 공간은 설정을 모아서 실행하고 확인
+
+A쪽(`test-ns1`)에서 살펴본 순서대로 B쪽(`test-ns2`)도 설정합니다. 아래 네 줄을 호스트 터미널에서 차례로 실행합니다.
+
+```bash
+sudo ip netns exec test-ns2 ip address add 10.203.0.3/24 dev eth0
+sudo ip netns exec test-ns2 ip link set lo up
+sudo ip netns exec test-ns2 ip link set eth0 up
 sudo ip link set test-b-host up
 ```
 
-**명령어 풀이**
+설정을 마친 뒤 한 번 조회합니다.
 
-- veth는 양쪽 끝이 모두 정상적으로 사용할 수 있어야 합니다.
-- 아직 두 호스트 쪽 끝을 서로 연결한 것은 아닙니다. 단지 장치를 활성화한 것입니다.
+```bash
+sudo ip netns exec test-ns2 ip address
+```
 
-#### 18. (두 namespace) IPv4 주소와 인터페이스 상태 확인
+**확인:** `eth0`에 `inet 10.203.0.3/24`가 있고 `state UP`입니다. 첫 번째 공간과 다른 IP 주소를 사용하지만 같은 서브넷에 속합니다.
+
+#### 17. (호스트) 활성화한 호스트 쪽 veth 끝 확인
+
+명령 15·16에서 각 veth를 완성할 때 호스트 쪽 끝도 함께 활성화했습니다. 이제 호스트에서 결과를 확인합니다.
+
+```bash
+ip address
+```
+
+- `test-a-host`, `test-b-host`가 모두 `state UP`인지 확인합니다.
+- 두 장치에는 이번 실습의 IPv4 주소를 설정하지 않았으므로 `inet 10.203.0.x/24`가 없습니다.
+- 자동 설정된 `inet6` 주소가 보일 수 있습니다. IPv6 주소이며 이번에 지정한 IPv4 주소와 구분합니다.
+- 기존 호스트 NIC의 주소와 혼동하지 않습니다. 아직 두 veth 끝을 Bridge로 연결한 것은 아닙니다.
+
+#### 18. (두 namespace) IPv4 주소와 상태를 짧게 비교
 
 ```bash
 sudo ip netns exec test-ns1 ip -4 -br address
 sudo ip netns exec test-ns2 ip -4 -br address
 ```
 
-**명령어 풀이**
-
-- `ip -4 -br address`: 인터페이스 상태와 IPv4 주소를 짧게 보여 줍니다.
-- `-4`: IPv4 정보만 조회합니다. 이번에 설정하지 않은 IPv6 주소와 구분하기 위한 옵션입니다.
-- 첫 번째 `eth0`에는 `10.203.0.2/24`, 두 번째 `eth0`에는 `10.203.0.3/24`가 보여야 합니다.
-- 주소가 보인다는 것은 **설정값을 확인했다는 뜻**입니다. 실제 통신 여부는 다음 ping 결과로 따로 확인합니다.
+- `-4`: IPv4만 조회합니다. `-br`: 한 줄씩 짧게 표시합니다.
+- 첫 번째 `eth0`: `UP`, `10.203.0.2/24`.
+- 두 번째 `eth0`: `UP`, `10.203.0.3/24`.
+- 주소와 상태를 확인한 것이며, 실제 통신 여부는 다음 ping으로 따로 확인합니다.
 
 ### Bridge를 만들기 전에 통신해 보기
 
@@ -420,6 +536,14 @@ sudo ip link add test-br0 type bridge
 - `ip link add`: 새 네트워크 장치를 만듭니다.
 - `test-br0`: 이번 실습에서 사용할 bridge 이름입니다.
 - `type bridge`: 종류가 `bridge`인 가상 네트워크 장치를 만듭니다. Bridge도 Linux에서 네트워크 인터페이스로 다뤄집니다.
+
+**호스트에 새 인터페이스가 추가되었는지 확인합니다.**
+
+```bash
+ip address
+```
+
+기존 장치 외에 `test-br0`가 새로 보입니다. 아직 활성화하지 않았으므로 `state DOWN`이며, 실습용 IPv4 주소도 없습니다. **Bridge도 조회 가능한 네트워크 인터페이스**임을 확인한 뒤 포트를 연결합니다.
 
 #### 21. (호스트) 첫 번째 veth 끝을 bridge에 연결
 
@@ -480,6 +604,8 @@ sudo ip netns exec test-ns1 ping 10.203.0.3
 
 **예상 결과: 성공합니다.** 응답을 몇 번 확인한 뒤 **Ctrl+C**로 종료합니다.
 
+연결 직후에는 첫 요청이 실패한 뒤 다음 요청부터 응답이 올 수 있습니다. 첫 줄만 보고 판단하지 말고 연속된 응답을 확인한 뒤 종료합니다. 응답이 계속 없으면 아래 `막혔을 때`를 확인합니다.
+
 Bridge 전에는 실패했고 Bridge 후에는 성공했다는 비교가 중요합니다.
 
 #### 26. (`test-ns2` → `test-ns1`) 반대 방향도 확인
@@ -511,21 +637,35 @@ Bridge는 들어온 Ethernet frame의 **출발지 MAC 주소**를 관찰하면�
 
 #### 27. (각 namespace와 호스트) 실제 MAC 주소와 Bridge의 FDB 대응
 
+**① 첫 번째 namespace의 MAC 주소를 읽고 기록합니다.**
+
 ```bash
 sudo ip netns exec test-ns1 ip -br link show eth0
+```
+
+`eth0`의 상태 뒤에 나오는 MAC 주소를 `MAC A`로 기록합니다. 호스트 쪽 `test-a-host`의 MAC이 아니라 **내부 eth0의 MAC**입니다.
+
+**② 두 번째 namespace의 MAC 주소를 읽고 기록합니다.**
+
+```bash
 sudo ip netns exec test-ns2 ip -br link show eth0
-bridge fdb show br test-br0
+```
+
+이번 출력의 MAC 주소를 `MAC B`로 기록합니다. 두 주소를 기록한 다음 호스트의 학습 표를 확인합니다.
+
+**③ 호스트에서 동적으로 학습한 FDB 항목을 확인합니다.**
+
+```bash
 bridge fdb show br test-br0 dynamic
 ```
 
 **명령어 풀이**
 
-- `ip -br link show eth0`: 해당 namespace의 `eth0` 상태와 MAC 주소를 짧게 보여 줍니다. 첫 번째 출력은 ns1, 두 번째 출력은 ns2의 값입니다.
-- `bridge`: Linux Bridge의 포트·MAC 학습 상태 등을 조회하거나 설정하는 명령입니다. `iproute2` 패키지에 포함됩니다.
-- `fdb`: Forwarding Database의 약자로, bridge가 MAC 주소와 포트의 관계를 관리하는 표입니다.
-- `show`: 현재 기록을 조회합니다. 뒤에 `br test-br0`와 같은 조회 조건을 붙일 때 필요합니다.
-- `br test-br0`: `test-br0` bridge의 FDB를 확인합니다.
-- `dynamic`: 동적으로 학습한 항목만 골라 보여 줍니다. 실제 출력 행에 `dynamic`이라는 단어가 항상 표시되는 것은 아닙니다.
+- `bridge`: Linux Bridge의 포트·MAC 학습 정보를 관리하는 명령입니다.
+- `fdb`: Forwarding Database, 즉 MAC 주소와 포트의 관계를 관리하는 표입니다.
+- `show br test-br0`: 지정한 Bridge의 FDB를 조회합니다. `br` 조건을 사용하므로 `show`가 필요합니다.
+- `dynamic`: 동적으로 학습한 항목만 골라 봅니다. 출력 행에 `dynamic`이라는 단어가 항상 나타나는 것은 아닙니다.
+- 이번 관찰에는 동적 학습 항목만 필요하므로 전체 FDB 조회는 생략합니다.
 
 **관찰할 대응 관계**
 
@@ -581,6 +721,22 @@ sudo ip link set test-a-host down
 
 - `down`: 장치를 삭제하지 않고 사용할 수 없는 상태로 바꿉니다.
 - namespace, IP 주소, bridge 자체는 그대로 남습니다.
+
+**ping 전에, 호스트에서 변경된 상태를 확인합니다.**
+
+```bash
+ip address
+```
+
+`test-a-host`의 `state DOWN`과 `<...>` 안의 `UP` 플래그가 사라진 것을 확인합니다. `test-b-host`와 `test-br0`는 그대로 남습니다.
+
+이어서 연결된 namespace 안도 확인합니다.
+
+```bash
+sudo ip netns exec test-ns1 ip address
+```
+
+내부 `eth0`는 `state DOWN`이지만 활성화 설정인 `UP` 플래그와 `inet 10.203.0.2/24`는 남아 있습니다. 반대쪽 끝이 내려가 링크를 사용할 수 없어진 것입니다. 이 상태를 확인한 다음 같은 목적지로 ping을 보냅니다.
 
 #### 30. (`test-ns1` → `test-ns2`) 같은 ping 다시 실행
 
