@@ -228,7 +228,7 @@ sudo ip netns exec cv6-lab ip link show lo
 #### 07. (호스트 → 권한 유지 셸) 조건 A의 새 Bash 실행
 
 ```bash
-sudo ip netns exec cv6-lab capsh --inh= -- --noprofile --norc
+sudo ip netns exec cv6-lab capsh -- --noprofile --norc
 ```
 
 이제 권한 유지 셸 · UID 0입니다. 이후 명령 12까지는 이 셸 안에서 실행합니다.
@@ -238,7 +238,6 @@ sudo ip netns exec cv6-lab capsh --inh= -- --noprofile --norc
 - `sudo`: 새 셸을 관리자 권한으로 시작할 수 있게 합니다.
 - `ip netns exec cv6-lab`: 새 프로그램이 `cv6-lab`의 네트워크를 사용하게 합니다.
 - `capsh`: Capability 조건을 설정하고 프로그램을 실행하는 도구입니다.
-- `--inh=`: inheritable 집합을 비웁니다. A/B에 같은 조건으로 적용합니다.
 - `--`: 뒤의 인자를 전달하여 새 Bash를 실행합니다.
 - `--noprofile --norc`: Bash의 개인 설정 파일을 읽지 않게 하여 두 셸의 시작 조건을 맞춥니다.
 
@@ -349,7 +348,7 @@ sudo ip netns exec cv6-lab ip link show lo
 #### 15. (호스트 → 권한 제외 셸) 조건 B의 새 Bash 실행
 
 ```bash
-sudo ip netns exec cv6-lab capsh --drop=cap_net_admin --inh= -- --noprofile --norc
+sudo ip netns exec cv6-lab capsh --drop=cap_net_admin -- --noprofile --norc
 ```
 
 이제 권한 제외 셸 · UID 0입니다.
@@ -358,7 +357,7 @@ sudo ip netns exec cv6-lab capsh --drop=cap_net_admin --inh= -- --noprofile --no
 
 - A의 명령에 `--drop=cap_net_admin`을 추가했습니다.
 - 이 옵션은 먼저 bounding 집합에서 해당 권한을 제외합니다.
-- `--inh=`로 inheritable 집합을 비운 상태에서 새 Bash를 실행하면, 이 실습의 새 셸에서는 해당 권한이 `CapPrm`·`CapEff`에도 들어오지 않습니다.
+- 수업 VM에서는 이 상태로 새 Bash를 실행하면 해당 권한이 `CapPrm`·`CapEff`에서도 빠집니다.
 - 옵션 이름만으로 결과를 가정하지 않고 다음 단계에서 새 셸의 실제 권한을 확인합니다.
 
 #### 16. (권한 제외 셸 · UID 0) 같은 사용자와 같은 공간인지 확인
