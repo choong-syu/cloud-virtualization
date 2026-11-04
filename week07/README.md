@@ -968,27 +968,3 @@ sudo docker logs --tail 5 cv7-web
 | Bridge·veth | 관찰한 veth 이름 하나와 `bridge link`의 `master`에 표시된 Bridge 이름은? | |
 | 런타임·관리 프로세스 | Docker의 기본 런타임은? `pgrep` 출력에서 관찰한 관리 프로세스 이름은? | |
 | 웹 서비스 | 웹 서버의 HTTP 응답 코드는? 웹 로그에서 같은 `HEAD /` 요청과 응답 코드를 확인했는가? | |
-
-### 관찰 결과 해석
-
-**이번 실습의 컨테이너가 별도 VM이 아니라 호스트의 프로세스라는 근거를 두 가지 쓰세요.** 내부·호스트 PID 비교와 커널 버전 비교에서 얻은 실제 관찰값을 근거로 설명합니다.
-
-1. 근거 1:
-2. 근거 2:
-
-## 이번 실습에서 확인한 것
-
-1. runc는 config.json에 적은 조건에 따라 Linux 실행 환경을 구성합니다.
-2. 컨테이너 생성(create)과 프로그램 시작(start)은 구분되며, created와 running 상태로 확인할 수 있습니다.
-3. Docker는 이미지 준비, 실행 요청, 네트워크 구성과 관리 등을 더 편리하게 제공합니다.
-4. Docker로 실행한 프로그램도 Linux 프로세스이며, Namespace·Cgroup·권한·필터 등의 상태를 관찰할 수 있습니다.
-5. 같은 이미지로 실행해도 컨테이너별 hostname, 자원 한도, 파일 변경 내용은 달라질 수 있습니다.
-
-## 참고 자료
-
-- [runc 공식 사용 안내](https://github.com/opencontainers/runc)
-- [OCI Runtime Specification — Linux 설정](https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md)
-- [Docker 실행 옵션](https://docs.docker.com/engine/containers/run/)
-- [Docker Bridge 네트워크](https://docs.docker.com/engine/network/drivers/bridge/)
-- [Docker 자원 관찰](https://docs.docker.com/engine/containers/runmetrics/)
-- [Docker 기본 Seccomp 정책](https://docs.docker.com/engine/security/seccomp/)
