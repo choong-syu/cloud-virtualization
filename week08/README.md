@@ -360,12 +360,6 @@ sudo docker image ls cv8-task1
 sudo docker image inspect cv8-task1:v1 --format '{{json .Config.Cmd}}'
 ```
 
-이름이 cv8-task1-run인 컨테이너가 있는지 확인합니다.
-
-```bash
-sudo docker ps -a --filter name=cv8-task1-run
-```
-
 CMD 예상값은 `["cat","/app/message.txt"]`입니다. 아직 `cv8-task1-run` 컨테이너는 없습니다. 이미지 빌드와 컨테이너 실행은 구분합니다.
 
 **명령 09: 기본 CMD로 컨테이너 실행 — 호스트 Bash**
@@ -411,12 +405,6 @@ sudo docker rm cv8-task1-run
 
 ```bash
 sudo docker run --rm cv8-task1:v1
-```
-
-실행이 끝난 뒤에도 이미지가 남아 있는지 확인합니다.
-
-```bash
-sudo docker image ls cv8-task1
 ```
 
 `--rm`은 이 실행이 종료되면 컨테이너를 자동 삭제합니다. 이미지 `cv8-task1:v1`은 유지됩니다.
@@ -569,13 +557,7 @@ Version 2
 EOF
 ```
 
-바뀐 파일 내용을 확인합니다.
-
-```bash
-cat message.txt
-```
-
-Dockerfile은 수정하지 않습니다. 파일의 실제 내용을 바꿉니다. 수정 시간만 바꾸는 `touch`로 대신하지 않습니다.
+Dockerfile은 수정하지 않습니다. 파일의 실제 내용을 바꾸며, 변경 결과는 명령 19의 v1·v2 실행 출력으로 확인합니다. 수정 시간만 바꾸는 `touch`로 대신하지 않습니다.
 
 **명령 18: 새 태그 v2로 빌드 — 호스트 Bash**
 
@@ -643,18 +625,6 @@ COPY message.txt /app/message.txt
 EOF
 ```
 
-Dockerfile.a의 명령 순서를 확인합니다.
-
-```bash
-cat Dockerfile.a
-```
-
-Dockerfile.b의 명령 순서를 확인합니다.
-
-```bash
-cat Dockerfile.b
-```
-
 두 파일의 차이는 COPY와 RUN의 순서뿐입니다. `apk`는 Alpine의 패키지 관리 도구입니다. **`apk add --no-cache`는 패키지 인덱스 캐시 처리 옵션이며 Docker 빌드 캐시를 끄는 옵션이 아닙니다.** 이번 비교에는 `docker build --no-cache`를 넣지 않습니다.
 
 **명령 21: A 최초 빌드 — 호스트 Bash**
@@ -681,13 +651,7 @@ A/B 모두 성공해야 재빌드 비교가 가능합니다.
 printf 'Version 2\n' > message.txt
 ```
 
-변경한 내용을 확인합니다.
-
-```bash
-cat message.txt
-```
-
-파일 이름과 두 Dockerfile은 그대로 두고 메시지만 바꿉니다.
+파일 이름과 두 Dockerfile은 그대로 두고 메시지만 바꿉니다. 변경 결과는 재빌드 후 명령 26의 A·B 실행 출력으로 확인합니다.
 
 **명령 24: A를 v2로 재빌드 — 호스트 Bash**
 
@@ -1023,13 +987,7 @@ sudo docker rm cv8-lifecycle
 sudo docker ps -a --filter name=cv8-lifecycle
 ```
 
-컨테이너를 삭제한 뒤에도 이미지가 남아 있는지 확인합니다.
-
-```bash
-sudo docker image ls cv8-file
-```
-
-삭제한 컨테이너는 목록에서 사라지지만 `cv8-file:v1` 이미지는 남아 있습니다. 이 단계 전에 관찰값을 기록합니다.
+삭제한 컨테이너가 목록에서 사라졌는지 확인합니다. `cv8-file:v1` 이미지는 남아 있으며, 다음 명령에서 이 이미지로 새 컨테이너를 실행합니다. 이 단계 전에 관찰값을 기록합니다.
 
 **명령 44: 같은 이미지로 새 컨테이너 생성 — 호스트 Bash**
 
@@ -1134,6 +1092,7 @@ sudo docker image ls --filter 'reference=cv8-*'
 | 상황 | 확인·조치 |
 | --- | --- |
 | Dockerfile 또는 COPY 파일을 못 찾음 | `pwd`, `ls -la`로 현재 task 폴더와 파일명을 확인합니다. `Dockerfile`의 대소문자와 마지막 `.`을 확인합니다. |
+| 빌드 오류가 나거나 파일 출력이 예상과 다름 | 해당 task 폴더에서 `cat message.txt`, `cat Dockerfile`, `cat Dockerfile.a`, `cat Dockerfile.b` 중 확인할 파일에 해당하는 명령만 실행해 작성 내용을 점검합니다. |
 | `unknown command: docker buildx` | 명령 01의 `sudo apt-get update`와 `sudo apt-get install -y docker-buildx`가 성공했는지 확인한 뒤 버전 확인을 다시 실행합니다. |
 | `unknown flag: --progress` 또는 legacy builder 경고 | Buildx 설치와 `sudo docker buildx version` 확인을 먼저 완료한 뒤 원래 빌드 명령을 다시 실행합니다. `--progress`만 지워서 다음 단계로 넘어가지 않습니다. |
 | 빌드 로그가 예시와 다름 | `--progress=plain`과 Buildx를 확인합니다. 단계 번호·소요 시간 대신 RUN/COPY의 CACHED 표시를 봅니다. |
