@@ -53,6 +53,8 @@ Docker의 Client·Server 연결을 확인합니다.
 sudo docker version
 ```
 
+`docker: command not found`가 나오거나 `Server` 연결에 실패하면 아래의 **「Docker 명령이 없거나 Docker 서버에 연결되지 않을 때」**를 펼쳐 먼저 해결합니다. Client·Server가 모두 확인되기 전에는 Buildx 설치로 넘어가지 않습니다.
+
 Client·Server 정보가 정상적으로 표시되면 패키지 목록을 갱신합니다.
 
 ```bash
@@ -222,7 +224,7 @@ PY
 sudo systemctl restart docker
 ```
 
-Docker 서비스가 `active`인지 확인합니다. 재시작에 실패했다면 다음 단계로 진행하지 않습니다.
+Docker 서비스가 `active`인지 확인합니다. 재시작에 실패했다면 다음 단계로 진행하지 않습니다. 이 경우 사전 설정을 처음부터 반복해 실행 중인 컨테이너 목록을 덮어쓰지 말고, 저장한 목록을 유지한 채 오류를 해결합니다.
 
 ```bash
 sudo systemctl is-active docker
@@ -234,7 +236,7 @@ sudo systemctl is-active docker
 xargs -r sudo docker start < "$HOME/week08-running-before-mtu.txt"
 ```
 
-실행 상태를 확인합니다.
+실행 상태를 확인합니다. 앞서 저장한 목록의 컨테이너가 모두 표시되고 상태가 `Up`인지 비교합니다. 목록이 비어 있었다면 컨테이너가 표시되지 않아도 정상입니다.
 
 ```bash
 sudo docker ps
@@ -252,7 +254,7 @@ ip -o link show docker0
 sudo docker run --rm alpine:3.23 cat /sys/class/net/eth0/mtu
 ```
 
-컨테이너에서 Alpine 패키지 목록을 다운로드합니다. `100%`와 저장 완료가 표시되는지 확인합니다.
+컨테이너에서 Alpine 패키지 목록을 다운로드합니다. `saved`와 같은 저장 완료 메시지가 나오고 오류 없이 끝나는지 확인합니다. 진행률 표시는 터미널 환경에 따라 달라질 수 있습니다.
 
 ```bash
 sudo docker run --rm alpine:3.23 sh -c 'wget -T 20 -O /dev/null "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/$(apk --print-arch)/APKINDEX.tar.gz"'
@@ -621,7 +623,9 @@ sudo docker run --rm cv8-task1:v1
 sudo docker run --rm cv8-task1:v2
 ```
 
-v1은 `Docker Image Build Practice`, v2는 `Docker Build Cache Practice`와 `Version 2`를 출력합니다. 호스트 파일을 바꾸거나 새 v2를 빌드해도 이미 만든 v1의 파일은 그대로입니다.
+두 출력의 첫 줄은 `Cloud Virtualization - Week 08`로 같습니다. v1의 둘째 줄은 `Docker Image Build Practice`이고, v2는 둘째 줄이 `Docker Build Cache Practice`로 바뀌고 셋째 줄 `Version 2`가 추가됩니다.
+
+**이유:** `COPY`는 빌드할 때의 호스트 파일 내용을 이미지에 복사합니다. 호스트 파일과 이미지의 파일이 실시간으로 동기화되는 것은 아닙니다. 이번에는 바뀐 내용을 **새 태그 `v2`**로 빌드했으므로 `v1`에서 읽는 파일은 이전 내용 그대로입니다. 비교를 마칠 때까지 `v1` 태그로 다시 빌드하지 않습니다.
 
 **명령 20: 명령 순서 비교용 파일 두 개 작성 — 호스트 Bash**
 
@@ -1155,6 +1159,7 @@ sudo docker image ls --filter 'reference=cv8-*'
 | --- | --- |
 | Dockerfile 또는 COPY 파일을 못 찾음 | `pwd`, `ls -la`로 현재 task 폴더와 파일명을 확인합니다. `Dockerfile`의 대소문자와 마지막 `.`을 확인합니다. |
 | `unknown command: docker buildx` | 명령 01의 `sudo apt-get update`와 `sudo apt-get install -y docker-buildx`가 성공했는지 확인한 뒤 버전 확인을 다시 실행합니다. |
+| `unknown flag: --progress` 또는 legacy builder 경고 | Buildx 설치와 `sudo docker buildx version` 확인을 먼저 완료한 뒤 원래 빌드 명령을 다시 실행합니다. `--progress`만 지워서 다음 단계로 넘어가지 않습니다. |
 | 빌드 로그가 예시와 다름 | `--progress=plain`과 Buildx를 확인합니다. 단계 번호·소요 시간 대신 RUN/COPY의 CACHED 표시를 봅니다. |
 | Docker Hub 또는 apk 다운로드 실패 | 인터넷·DNS·프록시·속도 제한 오류를 확인합니다. 성공하기 전 다음 단계로 가지 않습니다. 패키지 서버 문제로 A 설치가 실패한 결과를 캐시 비교 결과로 쓰지 않습니다. |
 | 컨테이너 이름이 이미 존재함 | `sudo docker ps -a --filter name=cv8-`로 상태를 확인합니다. 실습 중인 A/B는 start/exec로 이어갑니다. 처음부터 반복할 때만 필요한 결과를 저장하고 해당 이름을 명시해 `sudo docker rm -f 이름`으로 정리합니다. |
