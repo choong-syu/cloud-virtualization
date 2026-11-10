@@ -24,6 +24,7 @@
 - 학생별 Ubuntu 24.04 VM에 SSH로 접속합니다. **이 문서의 모든 명령은 VM의 일반 사용자 Bash에서 실행**합니다. PC의 PowerShell이나 `sudo -i`로 들어간 root 셸에서 시작하지 않습니다.
 - 7주차의 Ubuntu `docker.io` 설치를 이어 씁니다. Docker 회사 저장소의 패키지와 혼합 설치하지 않습니다.
 - Git 설치·저장소 복제·별도 파일 다운로드가 필요 없습니다. 아래 파일 생성 블록을 직접 복사합니다.
+- **코드 블록 하나씩 복사해 위에서 아래 순서로 실행**합니다. 명령 번호 01~48은 학습 단계이며, 한 번호 안에 여러 복사 블록이 있을 수 있습니다. 같은 VM의 같은 Bash 터미널을 계속 사용해 현재 폴더를 유지합니다. 설명에서 의도한 오류를 제외하고 오류가 발생하면 해결한 뒤 다음 블록으로 진행합니다.
 - `cat > 파일 <<'EOF'` 블록은 마지막 `EOF`까지 한 번에 복사합니다. 마지막 `EOF`는 들여쓰기 없이 단독 줄입니다. `>` 프롬프트가 계속 나오면 아직 입력이 끝나지 않은 것이므로 `Ctrl+C` 후 블록 전체를 다시 붙여 넣습니다.
 - `sudo docker exec … sh -c '… > 파일'`의 따옴표를 유지합니다. 여기의 `>`는 컨테이너 안에서 처리합니다.
 - 파일 생성 명령은 같은 이름의 기존 파일을 덮어씁니다. 재수강 시 기존 `~/week08-task*` 작업은 먼저 별도 보관합니다. 기존 7주차 자원은 건드리지 않습니다.
@@ -34,26 +35,70 @@
 
 **명령 01: Docker 확인 후 Buildx 설치 — 호스트 Bash**
 
+현재 사용자 이름을 확인합니다.
+
 ```bash
 id -un
+```
+
+현재 작업 폴더를 확인합니다.
+
+```bash
 pwd
+```
+
+Docker의 Client·Server 연결을 확인합니다.
+
+```bash
 sudo docker version
+```
+
+Client·Server 정보가 정상적으로 표시되면 패키지 목록을 갱신합니다.
+
+```bash
 sudo apt-get update
+```
+
+Buildx를 설치합니다. 설치가 완료될 때까지 기다립니다.
+
+```bash
 sudo apt-get install -y docker-buildx
+```
+
+Buildx 버전이 표시되는지 확인합니다.
+
+```bash
 sudo docker buildx version
 ```
 
-**확인:** Docker의 `Client`·`Server` 정보가 표시되고, 패키지 설치가 완료된 뒤 마지막 줄에서 Buildx 버전이 나와야 합니다. 이 실습의 빌드 명령은 Buildx를 사용합니다. 설치 오류가 나오면 다음 단계로 넘어가지 않습니다. 이미 Buildx가 설치된 VM에서도 같은 설치 명령을 실행할 수 있습니다.
+**확인:** Docker의 `Client`·`Server` 정보가 표시되고, 패키지 설치가 완료된 뒤 마지막 버전 확인 명령에서 Buildx 버전이 나와야 합니다. 이 실습의 빌드 명령은 Buildx를 사용합니다. 설치 오류가 나오면 다음 단계로 넘어가지 않습니다. 이미 Buildx가 설치된 VM에서도 같은 설치 명령을 실행할 수 있습니다.
 
 <details>
 <summary>Docker 명령이 없거나 Docker 서버에 연결되지 않을 때</summary>
 
 7주차의 Docker 설치 또는 서비스 시작을 완료하지 못한 경우에만 진행합니다. Docker가 정상이라면 위 명령 01의 Buildx 설치로 준비가 완료됩니다.
 
+Ubuntu 패키지 목록을 갱신합니다.
+
 ```bash
 sudo apt-get update
+```
+
+누락된 Docker Engine을 설치합니다.
+
+```bash
 sudo apt-get install -y docker.io
+```
+
+Docker 서비스를 시작합니다.
+
+```bash
 sudo systemctl start docker
+```
+
+Docker의 Client·Server가 정상 연결되는지 확인합니다.
+
+```bash
 sudo docker version
 ```
 
@@ -64,9 +109,21 @@ Docker가 정상 연결되면 명령 01로 돌아가 Buildx 설치와 버전 확
 
 **명령 02: 기존 실습 자원과 폴더 확인 — 호스트 Bash**
 
+기존 8주차 컨테이너를 확인합니다.
+
 ```bash
 sudo docker ps -a --filter name=cv8- --format 'table {{.Names}}\t{{.Status}}'
+```
+
+기존 8주차 이미지 태그를 확인합니다.
+
+```bash
 sudo docker image ls --filter 'reference=cv8-*'
+```
+
+기존 실습 폴더를 확인합니다. 폴더가 없으면 출력이 없어도 정상입니다.
+
+```bash
 ls -d "$HOME"/week08-task* 2>/dev/null || true
 ```
 
@@ -98,9 +155,21 @@ sudo docker pull alpine:3.23
 
 **명령 04: 프로젝트 폴더 생성과 이동 — 호스트 Bash**
 
+Task 1 프로젝트 폴더를 만듭니다.
+
 ```bash
 mkdir -p "$HOME/week08-task1"
+```
+
+만든 폴더로 이동합니다.
+
+```bash
 cd "$HOME/week08-task1"
+```
+
+현재 경로를 확인합니다.
+
+```bash
 pwd
 ```
 
@@ -108,17 +177,26 @@ pwd
 
 **명령 05: 이미지에 포함할 원본 파일 작성 — 호스트 Bash**
 
+메시지 파일을 만듭니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
 ```bash
 cat > message.txt <<'EOF'
 Cloud Virtualization - Week 08
 Docker Image Build Practice
 EOF
+```
+
+작성한 파일의 내용을 확인합니다.
+
+```bash
 cat message.txt
 ```
 
 위 두 줄이 그대로 보여야 합니다.
 
 **명령 06: Dockerfile 작성 — 호스트 Bash**
+
+Dockerfile을 만듭니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
 
 ```bash
 cat > Dockerfile <<'EOF'
@@ -127,6 +205,11 @@ RUN mkdir -p /app
 COPY message.txt /app/message.txt
 CMD ["cat", "/app/message.txt"]
 EOF
+```
+
+작성한 Dockerfile의 내용을 확인합니다.
+
+```bash
 cat Dockerfile
 ```
 
@@ -141,8 +224,15 @@ CMD의 `cat`은 빌드 도중 실행되지 않습니다. `COPY`의 원본은 호
 
 **명령 07: v1 이미지 빌드 — 호스트 Bash**
 
+Task 1 프로젝트 폴더로 이동합니다.
+
 ```bash
 cd "$HOME/week08-task1"
+```
+
+현재 폴더를 빌드 컨텍스트로 사용해 v1 이미지를 만듭니다.
+
+```bash
 sudo docker build --progress=plain -t cv8-task1:v1 .
 ```
 
@@ -150,9 +240,21 @@ sudo docker build --progress=plain -t cv8-task1:v1 .
 
 **명령 08: 이미지와 기본 CMD 확인 — 호스트 Bash**
 
+생성한 이미지 태그를 확인합니다.
+
 ```bash
 sudo docker image ls cv8-task1
+```
+
+이미지에 저장된 기본 CMD를 확인합니다.
+
+```bash
 sudo docker image inspect cv8-task1:v1 --format '{{json .Config.Cmd}}'
+```
+
+이름이 cv8-task1-run인 컨테이너가 있는지 확인합니다.
+
+```bash
 sudo docker ps -a --filter name=cv8-task1-run
 ```
 
@@ -175,8 +277,15 @@ Docker Image Build Practice
 
 **명령 10: 종료 상태와 로그 확인 — 호스트 Bash**
 
+컨테이너의 종료 상태를 확인합니다.
+
 ```bash
 sudo docker ps -a --filter name=cv8-task1-run
+```
+
+컨테이너가 남긴 출력 로그를 확인합니다.
+
+```bash
 sudo docker logs cv8-task1-run
 ```
 
@@ -184,9 +293,21 @@ sudo docker logs cv8-task1-run
 
 **명령 11: 종료 컨테이너 삭제 후 일회성 실행 — 호스트 Bash**
 
+종료된 컨테이너를 삭제합니다.
+
 ```bash
 sudo docker rm cv8-task1-run
+```
+
+같은 이미지로 일회성 컨테이너를 실행합니다.
+
+```bash
 sudo docker run --rm cv8-task1:v1
+```
+
+실행이 끝난 뒤에도 이미지가 남아 있는지 확인합니다.
+
+```bash
 sudo docker image ls cv8-task1
 ```
 
@@ -198,12 +319,29 @@ sudo docker image ls cv8-task1
 
 **명령 12: 컨텍스트 제외 규칙과 비교용 Dockerfile 작성 — 호스트 Bash**
 
+Task 1 프로젝트 폴더로 이동합니다.
+
 ```bash
 cd "$HOME/week08-task1"
+```
+
+제외 규칙을 확인할 임시 파일을 만듭니다.
+
+```bash
 printf 'This file stays on the host.\n' > scratch.tmp
+```
+
+.dockerignore를 작성합니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
+```bash
 cat > .dockerignore <<'EOF'
 *.tmp
 EOF
+```
+
+비교용 Dockerfile.context를 작성합니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
+```bash
 cat > Dockerfile.context <<'EOF'
 FROM busybox:1.36
 COPY . /context/
@@ -215,13 +353,25 @@ EOF
 
 **명령 13: 컨텍스트 제외 결과 확인 — 호스트 Bash**
 
+비교용 Dockerfile로 이미지를 빌드합니다.
+
 ```bash
 sudo docker build --progress=plain -f Dockerfile.context -t cv8-context:v1 .
+```
+
+컨테이너에서 /context의 파일 목록을 확인합니다.
+
+```bash
 sudo docker run --rm cv8-context:v1
+```
+
+호스트에 scratch.tmp가 남아 있는지 확인합니다.
+
+```bash
 ls -l scratch.tmp
 ```
 
-컨테이너의 `/context`에는 `message.txt`가 있고 `scratch.tmp`는 없어야 합니다. 호스트의 마지막 `ls`에는 `scratch.tmp`가 남아 있습니다. Dockerfile·ignore 파일 자체의 표시 여부는 빌더에 따라 달라질 수 있으므로 성공 기준으로 삼지 않습니다.
+컨테이너의 `/context`에는 `message.txt`가 있고 `scratch.tmp`는 없어야 합니다. 호스트 파일 확인 명령인 `ls`에는 `scratch.tmp`가 남아 있습니다. Dockerfile·ignore 파일 자체의 표시 여부는 빌더에 따라 달라질 수 있으므로 성공 기준으로 삼지 않습니다.
 
 `-f`는 사용할 Dockerfile을 선택할 뿐 컨텍스트를 바꾸지 않습니다. 마지막 `.`은 여전히 `~/week08-task1`입니다.
 
@@ -235,9 +385,21 @@ ls -l scratch.tmp
 
 **명령 14: 이미지 제작 이력과 파일시스템 레이어 확인 — 호스트 Bash**
 
+이미지 제작 이력을 확인합니다.
+
 ```bash
 sudo docker history --no-trunc cv8-task1:v1
+```
+
+파일시스템 레이어 목록을 확인합니다.
+
+```bash
 sudo docker image inspect cv8-task1:v1 --format '{{json .RootFS.Layers}}'
+```
+
+파일시스템과 구분되는 기본 실행 설정을 확인합니다.
+
+```bash
 sudo docker image inspect cv8-task1:v1 --format '{{json .Config.Cmd}}'
 ```
 
@@ -247,11 +409,19 @@ sudo docker image inspect cv8-task1:v1 --format '{{json .Config.Cmd}}'
 
 **명령 15: 이미지로 구성된 컨테이너의 / 확인 — 호스트 Bash**
 
+이미지로 실행한 컨테이너의 루트 디렉터리 목록을 확인합니다.
+
 ```bash
-sudo docker run --rm cv8-task1:v1 sh -c 'ls /; printf "\n/app/message.txt:\n"; cat /app/message.txt'
+sudo docker run --rm cv8-task1:v1 ls /
 ```
 
-`/bin` 등 베이스 이미지의 파일과 `/app/message.txt`를 함께 봅니다. 이미지 이름 뒤의 `sh -c …`가 이번 실행의 기본 CMD를 대체합니다. 이미지의 `.Config.Cmd` 자체를 수정한 것은 아닙니다.
+같은 이미지로 일회성 컨테이너를 실행해 메시지 파일을 읽습니다.
+
+```bash
+sudo docker run --rm cv8-task1:v1 cat /app/message.txt
+```
+
+`/bin` 등 베이스 이미지의 파일과 `/app/message.txt`를 함께 봅니다. 이미지 이름 뒤의 `ls /`와 `cat /app/message.txt`가 각 실행의 기본 CMD를 대체합니다. 두 명령은 같은 이미지에서 별도의 일회성 컨테이너를 실행합니다. 이미지의 `.Config.Cmd` 자체를 수정한 것은 아닙니다.
 
 7주차에는 rootfs 디렉터리를 직접 준비했습니다. 이번에는 Docker가 이미지로 실행 파일시스템을 준비했습니다. **Docker 이미지 그 자체가 실행 중인 rootfs인 것은 아닙니다.** 내부 저장소 경로를 추측하거나 `/var/lib/docker` 파일을 직접 수정하지 않습니다.
 
@@ -265,8 +435,15 @@ sudo docker run --rm cv8-task1:v1 sh -c 'ls /; printf "\n/app/message.txt:\n"; c
 
 **명령 16: 아무것도 바꾸지 않고 다시 빌드 — 호스트 Bash**
 
+Task 1 프로젝트 폴더로 이동합니다.
+
 ```bash
 cd "$HOME/week08-task1"
+```
+
+입력을 바꾸지 않은 상태로 다시 빌드합니다.
+
+```bash
 sudo docker build --progress=plain -t cv8-task1:v1 .
 ```
 
@@ -274,12 +451,19 @@ sudo docker build --progress=plain -t cv8-task1:v1 .
 
 **명령 17: COPY의 입력 파일만 변경 — 호스트 Bash**
 
+메시지 파일의 내용을 바꿉니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
 ```bash
 cat > message.txt <<'EOF'
 Cloud Virtualization - Week 08
 Docker Build Cache Practice
 Version 2
 EOF
+```
+
+바뀐 파일 내용을 확인합니다.
+
+```bash
 cat message.txt
 ```
 
@@ -295,8 +479,15 @@ sudo docker build --progress=plain -t cv8-task1:v2 .
 
 **명령 19: v1과 v2의 출력 비교 — 호스트 Bash**
 
+v1 이미지의 출력부터 확인합니다.
+
 ```bash
 sudo docker run --rm cv8-task1:v1
+```
+
+이어서 v2 이미지의 출력을 확인하고 비교합니다.
+
+```bash
 sudo docker run --rm cv8-task1:v2
 ```
 
@@ -304,21 +495,53 @@ v1은 `Docker Image Build Practice`, v2는 `Docker Build Cache Practice`와 `Ver
 
 **명령 20: 명령 순서 비교용 파일 두 개 작성 — 호스트 Bash**
 
+Task 2 프로젝트 폴더를 만듭니다.
+
 ```bash
 mkdir -p "$HOME/week08-task2"
+```
+
+만든 폴더로 이동합니다.
+
+```bash
 cd "$HOME/week08-task2"
+```
+
+두 빌드에서 사용할 메시지 파일을 만듭니다.
+
+```bash
 printf 'Version 1\n' > message.txt
+```
+
+COPY 후 RUN을 수행하는 Dockerfile.a를 작성합니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
+```bash
 cat > Dockerfile.a <<'EOF'
 FROM alpine:3.23
 COPY message.txt /app/message.txt
 RUN apk add --no-cache curl
 EOF
+```
+
+RUN 후 COPY를 수행하는 Dockerfile.b를 작성합니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
+```bash
 cat > Dockerfile.b <<'EOF'
 FROM alpine:3.23
 RUN apk add --no-cache curl
 COPY message.txt /app/message.txt
 EOF
+```
+
+Dockerfile.a의 명령 순서를 확인합니다.
+
+```bash
 cat Dockerfile.a
+```
+
+Dockerfile.b의 명령 순서를 확인합니다.
+
+```bash
 cat Dockerfile.b
 ```
 
@@ -344,8 +567,15 @@ A/B 모두 성공해야 재빌드 비교가 가능합니다.
 
 **명령 23: 두 빌드가 공유하는 메시지 변경 — 호스트 Bash**
 
+공통 메시지를 Version 2로 바꿉니다.
+
 ```bash
 printf 'Version 2\n' > message.txt
+```
+
+변경한 내용을 확인합니다.
+
+```bash
 cat message.txt
 ```
 
@@ -376,12 +606,31 @@ sudo docker build --network=host --progress=plain -f Dockerfile.b -t cv8-order-b
 
 **명령 26: 두 이미지의 결과 확인 — 호스트 Bash**
 
+A 이미지의 메시지를 확인합니다.
+
 ```bash
-sudo docker run --rm cv8-order-a:v2 sh -c 'cat /app/message.txt; curl --version'
-sudo docker run --rm cv8-order-b:v2 sh -c 'cat /app/message.txt; curl --version'
+sudo docker run --rm cv8-order-a:v2 cat /app/message.txt
 ```
 
-둘 다 Version 2와 curl 버전을 출력합니다. 출력 기능이 같더라도 빌드 시 재사용할 수 있는 단계는 달라집니다. 외부 저장소의 패키지 상태까지 고정한 실험은 아니므로 이미지 ID·정확한 크기가 같다고 기대하지 않습니다.
+A 이미지에 설치된 curl 버전을 확인합니다.
+
+```bash
+sudo docker run --rm cv8-order-a:v2 curl --version
+```
+
+B 이미지의 메시지를 확인합니다.
+
+```bash
+sudo docker run --rm cv8-order-b:v2 cat /app/message.txt
+```
+
+B 이미지에 설치된 curl 버전을 확인합니다.
+
+```bash
+sudo docker run --rm cv8-order-b:v2 curl --version
+```
+
+A와 B 각각에서 Version 2와 curl 버전을 따로 확인합니다. 각 확인 명령은 실행 후 자동 삭제되는 일회성 컨테이너를 사용합니다. 출력 기능이 같더라도 빌드 시 재사용할 수 있는 단계는 달라집니다. 외부 저장소의 패키지 상태까지 고정한 실험은 아니므로 이미지 ID·정확한 크기가 같다고 기대하지 않습니다.
 
 ---
 
@@ -395,10 +644,27 @@ sudo docker run --rm cv8-order-b:v2 sh -c 'cat /app/message.txt; curl --version'
 
 **명령 27: 오래 실행되는 이미지의 파일 작성 — 호스트 Bash**
 
+Task 3 프로젝트 폴더를 만듭니다.
+
 ```bash
 mkdir -p "$HOME/week08-task3"
+```
+
+만든 폴더로 이동합니다.
+
+```bash
 cd "$HOME/week08-task3"
+```
+
+이미지에 넣을 원본 메시지 파일을 만듭니다.
+
+```bash
 printf 'Original Data\n' > message.txt
+```
+
+파일 관찰용 Dockerfile을 작성합니다. 아래 블록은 마지막 EOF까지 한 번에 복사합니다.
+
+```bash
 cat > Dockerfile <<'EOF'
 FROM busybox:1.36
 RUN mkdir -p /app
@@ -419,9 +685,21 @@ sudo docker build --progress=plain -t cv8-file:v1 .
 
 **명령 29: 같은 이미지로 A와 B 실행 — 호스트 Bash**
 
+컨테이너 A를 실행합니다.
+
 ```bash
 sudo docker run -d --name cv8-a cv8-file:v1
+```
+
+같은 이미지로 컨테이너 B를 실행합니다.
+
+```bash
 sudo docker run -d --name cv8-b cv8-file:v1
+```
+
+두 컨테이너가 실행 중인지 확인합니다.
+
+```bash
 sudo docker ps --filter name=cv8-
 ```
 
@@ -429,8 +707,15 @@ A/B의 이름과 ID는 다르고 이미지 태그는 같습니다. `-d`는 백�
 
 **명령 30: 변경 전 A와 B의 파일 확인 — 호스트 Bash**
 
+변경 전 A의 파일을 읽습니다.
+
 ```bash
 sudo docker exec cv8-a cat /app/message.txt
+```
+
+변경 전 B의 파일을 읽습니다.
+
+```bash
 sudo docker exec cv8-b cat /app/message.txt
 ```
 
@@ -446,9 +731,21 @@ sudo docker exec cv8-a sh -c 'echo "Modified by Container A" > /app/message.txt'
 
 **명령 32: A·B·새 컨테이너의 출력 비교 — 호스트 Bash**
 
+A의 수정된 내용을 확인합니다.
+
 ```bash
 sudo docker exec cv8-a cat /app/message.txt
+```
+
+B의 파일 내용을 확인합니다.
+
+```bash
 sudo docker exec cv8-b cat /app/message.txt
+```
+
+새 일회성 컨테이너에서 이미지의 원본 내용을 확인합니다.
+
+```bash
 sudo docker run --rm cv8-file:v1 cat /app/message.txt
 ```
 
@@ -456,8 +753,15 @@ sudo docker run --rm cv8-file:v1 cat /app/message.txt
 
 **명령 33: A에 새 파일 생성 — 호스트 Bash**
 
+A 안에 새 파일을 만듭니다.
+
 ```bash
 sudo docker exec cv8-a sh -c 'echo "New File in A" > /app/new.txt'
+```
+
+A에서 새 파일의 내용을 읽습니다.
+
+```bash
 sudo docker exec cv8-a cat /app/new.txt
 ```
 
@@ -489,8 +793,15 @@ sudo docker exec cv8-a ls /app/message.txt
 
 **명령 37: B와 새 실행의 원본 확인 — 호스트 Bash**
 
+B에 원본 파일이 남아 있는지 확인합니다.
+
 ```bash
 sudo docker exec cv8-b cat /app/message.txt
+```
+
+새 일회성 컨테이너에서도 원본 파일을 확인합니다.
+
+```bash
 sudo docker run --rm cv8-file:v1 cat /app/message.txt
 ```
 
@@ -526,9 +837,21 @@ A/B 실험과 별개인 새 컨테이너입니다.
 
 **명령 40: 실행 중 데이터 생성과 ID 기록 — 호스트 Bash**
 
+실행 중인 컨테이너 안에 data.txt를 만듭니다.
+
 ```bash
 sudo docker exec cv8-lifecycle sh -c 'echo "Persistent Until Remove" > /app/data.txt'
+```
+
+생성한 파일 내용을 확인합니다.
+
+```bash
 sudo docker exec cv8-lifecycle cat /app/data.txt
+```
+
+현재 컨테이너 ID를 기록합니다.
+
+```bash
 sudo docker inspect cv8-lifecycle --format '{{.Id}}'
 ```
 
@@ -536,8 +859,15 @@ sudo docker inspect cv8-lifecycle --format '{{.Id}}'
 
 **명령 41: 컨테이너 중지와 상태 확인 — 호스트 Bash**
 
+컨테이너를 중지합니다. 명령이 끝날 때까지 기다립니다.
+
 ```bash
 sudo docker stop cv8-lifecycle
+```
+
+중지 상태를 확인합니다.
+
+```bash
 sudo docker ps -a --filter name=cv8-lifecycle
 ```
 
@@ -545,9 +875,21 @@ Exited 상태를 확인합니다. 신호 처리에 따라 종료 코드는 달�
 
 **명령 42: 같은 컨테이너 재시작과 파일 확인 — 호스트 Bash**
 
+같은 컨테이너를 다시 시작합니다.
+
 ```bash
 sudo docker start cv8-lifecycle
+```
+
+ID가 앞서 기록한 값과 같은지 확인합니다.
+
+```bash
 sudo docker inspect cv8-lifecycle --format '{{.Id}}'
+```
+
+실행 후 만든 data.txt가 유지되는지 확인합니다.
+
+```bash
 sudo docker exec cv8-lifecycle cat /app/data.txt
 ```
 
@@ -555,10 +897,27 @@ ID가 같고 `Persistent Until Remove`가 유지됩니다. 프로세스 중지�
 
 **명령 43: 기록 후 컨테이너 삭제 — 호스트 Bash**
 
+현재 컨테이너를 중지합니다.
+
 ```bash
 sudo docker stop cv8-lifecycle
+```
+
+중지한 컨테이너를 삭제합니다.
+
+```bash
 sudo docker rm cv8-lifecycle
+```
+
+삭제한 컨테이너가 목록에서 사라졌는지 확인합니다.
+
+```bash
 sudo docker ps -a --filter name=cv8-lifecycle
+```
+
+컨테이너를 삭제한 뒤에도 이미지가 남아 있는지 확인합니다.
+
+```bash
 sudo docker image ls cv8-file
 ```
 
@@ -566,8 +925,15 @@ sudo docker image ls cv8-file
 
 **명령 44: 같은 이미지로 새 컨테이너 생성 — 호스트 Bash**
 
+같은 이미지로 새 컨테이너를 만듭니다.
+
 ```bash
 sudo docker run -d --name cv8-lifecycle-new cv8-file:v1
+```
+
+새 컨테이너 ID를 확인하고 이전 ID와 비교합니다.
+
+```bash
 sudo docker inspect cv8-lifecycle-new --format '{{.Id}}'
 ```
 
@@ -616,8 +982,15 @@ sudo docker exec cv8-lifecycle-new cat /app/message.txt
 
 **명령 47: 8주차 컨테이너만 확인하고 삭제 — 호스트 Bash**
 
+삭제할 8주차 컨테이너 목록을 먼저 확인합니다.
+
 ```bash
 sudo docker ps -a --filter name=cv8-
+```
+
+아래 이름의 실습 컨테이너를 삭제합니다.
+
+```bash
 sudo docker rm -f cv8-a cv8-b cv8-lifecycle-new
 ```
 
@@ -625,12 +998,24 @@ sudo docker rm -f cv8-a cv8-b cv8-lifecycle-new
 
 **명령 48: 이번에 빌드한 이미지 태그 삭제 — 호스트 Bash**
 
+이번에 빌드한 이미지 태그를 삭제합니다. 역슬래시로 이어진 줄들은 한 명령이므로 아래 블록 전체를 복사합니다.
+
 ```bash
 sudo docker image rm \
   cv8-task1:v1 cv8-task1:v2 cv8-context:v1 \
   cv8-order-a:v1 cv8-order-a:v2 \
   cv8-order-b:v1 cv8-order-b:v2 cv8-file:v1
+```
+
+남은 8주차 컨테이너가 있는지 확인합니다.
+
+```bash
 sudo docker ps -a --filter name=cv8-
+```
+
+남은 8주차 이미지 태그가 있는지 확인합니다.
+
+```bash
 sudo docker image ls --filter 'reference=cv8-*'
 ```
 
