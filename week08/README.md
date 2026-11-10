@@ -381,6 +381,8 @@ sudo docker run --rm cv8-order-b:v2 sh -c 'cat /app/message.txt; curl --version'
 
 **그림 읽기:** 이미지의 파일은 공통 출발점이며 쓰기 가능 레이어는 컨테이너마다 다릅니다. 그림의 파일 내용은 각 컨테이너에서 보이는 결합된 파일시스템을 뜻합니다. B와 새 실행의 원본 파일이 쓰기 레이어에 복사되었다는 뜻은 아닙니다. A의 변경·생성·삭제가 B와 새 실행에 영향을 주는지 비교합니다. **볼륨과 Bind Mount를 연결하지 않은 조건**입니다.
 
+그림의 ‘원본 데이터’와 ‘A에서 수정한 내용’은 아래 실제 출력인 `Original Data`와 `Modified by Container A`의 의미를 한글로 표현한 것입니다.
+
 **명령 27: 오래 실행되는 이미지의 파일 작성 — 호스트 Bash**
 
 ```bash
@@ -501,6 +503,8 @@ sudo docker diff cv8-a
 ![stop과 start는 같은 컨테이너의 data.txt를 유지하고 rm 후 새 run은 새 ID와 빈 쓰기 레이어로 시작하는 비교](images/05-lifecycle.png)
 
 **그림 읽기:** 이미지에 있던 `message.txt`와 실행 후 만든 `data.txt`를 구분합니다. 같은 컨테이너를 다시 시작하는 경우와 같은 이미지로 새 컨테이너를 만드는 경우는 다릅니다.
+
+그림의 ‘삭제 전까지 유지’는 실제 출력 `Persistent Until Remove`의 의미입니다. 명령어와 파일명은 실습에서 사용하는 표기를 그대로 유지했습니다.
 
 **명령 39: 수명주기 관찰용 컨테이너 생성 — 호스트 Bash**
 
