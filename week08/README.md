@@ -74,8 +74,15 @@ ls -d "$HOME"/week08-task* 2>/dev/null || true
 
 **명령 03: 베이스 이미지 준비 — 호스트 Bash**
 
+BusyBox 이미지를 먼저 다운로드합니다.
+
 ```bash
 sudo docker pull busybox:1.36
+```
+
+다운로드가 완료되면 Alpine 이미지를 다운로드합니다.
+
+```bash
 sudo docker pull alpine:3.23
 ```
 
