@@ -12,6 +12,7 @@
 | 5주차 | [프로세스에게 자신의 네트워크를 연결하다](week05/README.md) |
 | 6주차 | [프로세스가 할 수 있는 일을 제한하다](week06/README.md) |
 | 7주차 | [Linux 실행 조건을 runc와 Docker로 연결하다](week07/README.md) |
+| 8주차 | [Docker 이미지로 실행 파일시스템을 만들다](week08/README.md) |
 
 ## 수업에서 사용하는 방법
 
