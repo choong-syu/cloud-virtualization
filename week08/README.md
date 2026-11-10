@@ -10,14 +10,14 @@
 
 | 구간 | 확인할 질문 | 예상 시간 |
 | --- | --- | ---: |
-| 준비 | Buildx를 설치하고 Docker와 연결할 수 있는가? | 5~10분 |
+| 준비 | Buildx 설치와 MTU 설정·통신 확인을 마쳤는가? | 10~15분 |
 | Task 1 | Dockerfile의 파일과 CMD는 언제 사용되는가? | 15분 |
 | 연결 관찰 | 이미지 레이어가 7주차의 rootfs와 어떻게 연결되는가? | 10분 |
 | Task 2 | 입력 파일과 명령 순서가 캐시에 어떤 영향을 주는가? | 20분 |
 | Task 3 | A의 파일 변경이 B와 원본 이미지에도 반영되는가? | 15분 |
 | Task 4 | 중지·재시작과 삭제·재생성의 차이는 무엇인가? | 10분 |
 
-설명과 기록을 포함해 약 75~90분이며 다운로드 시간은 별도입니다. `.dockerignore` 관찰은 Task 1에서 함께 진행합니다.
+설명과 기록을 포함해 약 80~95분이며 다운로드 시간은 별도입니다. `.dockerignore` 관찰은 Task 1에서 함께 진행합니다.
 
 ## 시작 전에
 
@@ -27,7 +27,7 @@
 - **코드 블록 하나씩 복사해 위에서 아래 순서로 실행**합니다. 명령 번호 01~48은 학습 단계이며, 한 번호 안에 여러 복사 블록이 있을 수 있습니다. 같은 VM의 같은 Bash 터미널을 계속 사용해 현재 폴더를 유지합니다. 설명에서 의도한 오류를 제외하고 오류가 발생하면 해결한 뒤 다음 블록으로 진행합니다.
 - `cat > 파일 <<'EOF'` 블록은 마지막 `EOF`까지 한 번에 복사합니다. 마지막 `EOF`는 들여쓰기 없이 단독 줄입니다. `>` 프롬프트가 계속 나오면 아직 입력이 끝나지 않은 것이므로 `Ctrl+C` 후 블록 전체를 다시 붙여 넣습니다.
 - `sudo docker exec … sh -c '… > 파일'`의 따옴표를 유지합니다. 여기의 `>`는 컨테이너 안에서 처리합니다.
-- 파일 생성 명령은 같은 이름의 기존 파일을 덮어씁니다. 재수강 시 기존 `~/week08-task*` 작업은 먼저 별도 보관합니다. 기존 7주차 자원은 건드리지 않습니다.
+- 파일 생성 명령은 같은 이름의 기존 파일을 덮어씁니다. 재수강 시 기존 `~/week08-task*` 작업은 먼저 별도 보관합니다. 기존 7주차 자원은 삭제하지 않습니다.
 
 ### Buildx 설치와 실행 도구 확인
 
@@ -144,6 +144,136 @@ sudo docker pull alpine:3.23
 ```
 
 두 다운로드가 모두 성공해야 진행합니다. 최초 실행에는 네트워크가 필요합니다. 태그는 업데이트될 수 있으므로 이미지 ID·크기·digest를 예시 숫자에 맞추지 않습니다. 같은 수업의 캐시 비교 도중에는 다시 pull하거나 캐시를 삭제하지 않습니다.
+
+### Docker 네트워크 MTU 사전 설정
+
+**설정 이유:** 컨테이너의 패키지 다운로드가 중간에 멈추지 않도록 Docker 기본 브리지의 MTU를 VM의 외부 통신 인터페이스에 맞춥니다. 이 준비는 Task 1을 시작하기 전에 한 번 진행합니다.
+
+외부 통신에 사용하는 인터페이스를 확인합니다. 출력에서 `dev` 뒤의 이름을 봅니다.
+
+```bash
+ip -4 route get 1.1.1.1
+```
+
+인터페이스별 MTU를 확인합니다. 수업 VM에서는 외부 인터페이스가 `ens3`, MTU가 `1442`일 수 있으며, 아래 설정은 해당 VM의 실제 값을 자동으로 읽습니다.
+
+```bash
+ip -o link show
+```
+
+Docker 재시작 뒤 기존 실행 상태를 복구할 수 있도록, 현재 실행 중인 컨테이너 이름을 저장합니다.
+
+```bash
+sudo docker ps --format '{{.Names}}' > "$HOME/week08-running-before-mtu.txt"
+```
+
+저장한 목록을 확인합니다. **Docker 재시작 중에는 이 컨테이너들의 서비스가 잠시 중단될 수 있습니다.**
+
+```bash
+cat "$HOME/week08-running-before-mtu.txt"
+```
+
+기존 Docker 설정을 백업하고 `mtu` 항목을 추가·수정합니다. 아래 블록은 마지막 `PY`까지 한 번에 복사합니다. 다른 설정은 유지하며, 설정 검증이 실패하면 기존 파일을 교체하지 않습니다.
+
+```bash
+sudo python3 - <<'PY'
+import json
+import os
+import shutil
+import stat
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+
+route = json.loads(subprocess.check_output(
+    ["ip", "-j", "-4", "route", "get", "1.1.1.1"], text=True))[0]
+iface = route["dev"]
+mtu = int(Path(f"/sys/class/net/{iface}/mtu").read_text())
+config = Path("/etc/docker/daemon.json")
+settings = json.loads(config.read_text()) if config.exists() else {}
+if not isinstance(settings, dict):
+    raise SystemExit("daemon.json은 JSON 객체여야 합니다. 기존 설정을 확인하세요.")
+config.parent.mkdir(parents=True, exist_ok=True)
+mode = stat.S_IMODE(config.stat().st_mode) if config.exists() else 0o644
+if config.exists():
+    backup = config.with_name(f"daemon.json.before-mtu-{time.time_ns()}")
+    shutil.copy2(config, backup)
+    print(f"기존 설정 백업: {backup}", flush=True)
+settings["mtu"] = mtu
+with tempfile.NamedTemporaryFile(mode="w", dir=config.parent,
+                                 prefix=".mtu-", suffix=".json", delete=False) as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+    candidate = Path(f.name)
+try:
+    subprocess.run(["dockerd", "--validate", f"--config-file={candidate}"], check=True)
+    os.chmod(candidate, mode)
+    os.replace(candidate, config)
+    print(f"설정 저장 완료: {iface}의 MTU {mtu} 적용")
+finally:
+    candidate.unlink(missing_ok=True)
+PY
+```
+
+`configuration OK`와 `설정 저장 완료`가 표시되면 Docker를 재시작합니다. 오류가 나오면 재시작하지 말고 해당 오류부터 확인합니다.
+
+```bash
+sudo systemctl restart docker
+```
+
+Docker 서비스가 `active`인지 확인합니다. 재시작에 실패했다면 다음 단계로 진행하지 않습니다.
+
+```bash
+sudo systemctl is-active docker
+```
+
+앞서 실행 중이었던 컨테이너만 다시 시작합니다. 목록이 비어 있으면 실행하지 않고 넘어갑니다.
+
+```bash
+xargs -r sudo docker start < "$HOME/week08-running-before-mtu.txt"
+```
+
+실행 상태를 확인합니다.
+
+```bash
+sudo docker ps
+```
+
+Docker 기본 브리지의 MTU를 확인합니다.
+
+```bash
+ip -o link show docker0
+```
+
+새 컨테이너의 네트워크 인터페이스 MTU도 같은 값인지 확인합니다. 외부 인터페이스가 `1442`였다면 두 확인 결과도 `1442`여야 합니다.
+
+```bash
+sudo docker run --rm alpine:3.23 cat /sys/class/net/eth0/mtu
+```
+
+컨테이너에서 Alpine 패키지 목록을 다운로드합니다. `100%`와 저장 완료가 표시되는지 확인합니다.
+
+```bash
+sudo docker run --rm alpine:3.23 sh -c 'wget -T 20 -O /dev/null "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/$(apk --print-arch)/APKINDEX.tar.gz"'
+```
+
+마지막으로 빌드 중 패키지 설치가 완료되는지 확인합니다. 아래는 하나의 빌드 명령이므로 마지막 `EOF`까지 함께 복사합니다. **`--no-cache`는 이 준비 확인에서만 사용**하고, 이후 캐시 비교 실습에는 추가하지 않습니다.
+
+```bash
+sudo docker build --no-cache --progress=plain -t cv8-mtu-check:verify - <<'EOF'
+FROM alpine:3.23
+RUN apk add --no-cache curl && curl --version
+EOF
+```
+
+curl 버전 출력과 빌드 완료를 확인한 뒤, 준비 확인용 이미지 태그를 삭제합니다.
+
+```bash
+sudo docker image rm cv8-mtu-check:verify
+```
+
+확인이 모두 끝나면 Task 1로 진행합니다. [Docker 기본 브리지 설정 참고](https://docs.docker.com/engine/network/drivers/bridge/#configure-the-default-bridge-network)
 
 ---
 
@@ -547,12 +677,10 @@ cat Dockerfile.b
 
 두 파일의 차이는 COPY와 RUN의 순서뿐입니다. `apk`는 Alpine의 패키지 관리 도구입니다. **`apk add --no-cache`는 패키지 인덱스 캐시 처리 옵션이며 Docker 빌드 캐시를 끄는 옵션이 아닙니다.** 이번 비교에는 `docker build --no-cache`를 넣지 않습니다.
 
-**수업 VM의 다운로드 설정:** 아래 네 번의 비교 빌드에는 모두 `--network=host`를 붙입니다. 실제 수업 VM에서 기본 빌드 네트워크의 패키지 다운로드가 멈추는 현상을 확인했습니다. 이 옵션은 빌드 중 RUN이 VM의 네트워크를 사용하게 합니다. 컨테이너 파일시스템이나 이후 `docker run`의 네트워크 설정을 바꾸는 옵션은 아닙니다. A/B 네 번에 같은 옵션을 유지합니다. 기본 빌드 네트워크가 정상인 다른 환경에서는 네 번 모두 생략해도 됩니다.
-
 **명령 21: A 최초 빌드 — 호스트 Bash**
 
 ```bash
-sudo docker build --network=host --progress=plain -f Dockerfile.a -t cv8-order-a:v1 .
+sudo docker build --progress=plain -f Dockerfile.a -t cv8-order-a:v1 .
 ```
 
 패키지 서버에서 curl과 의존성을 받습니다. 실패하면 다음 단계로 넘어가지 말고 네트워크 연결을 해결한 뒤 다시 실행합니다.
@@ -560,7 +688,7 @@ sudo docker build --network=host --progress=plain -f Dockerfile.a -t cv8-order-a
 **명령 22: B 최초 빌드 — 호스트 Bash**
 
 ```bash
-sudo docker build --network=host --progress=plain -f Dockerfile.b -t cv8-order-b:v1 .
+sudo docker build --progress=plain -f Dockerfile.b -t cv8-order-b:v1 .
 ```
 
 A/B 모두 성공해야 재빌드 비교가 가능합니다.
@@ -584,7 +712,7 @@ cat message.txt
 **명령 24: A를 v2로 재빌드 — 호스트 Bash**
 
 ```bash
-sudo docker build --network=host --progress=plain -f Dockerfile.a -t cv8-order-a:v2 .
+sudo docker build --progress=plain -f Dockerfile.a -t cv8-order-a:v2 .
 ```
 
 COPY와 그 다음 `RUN apk add …`가 다시 처리되는지 봅니다.
@@ -592,7 +720,7 @@ COPY와 그 다음 `RUN apk add …`가 다시 처리되는지 봅니다.
 **명령 25: B를 v2로 재빌드 — 호스트 Bash**
 
 ```bash
-sudo docker build --network=host --progress=plain -f Dockerfile.b -t cv8-order-b:v2 .
+sudo docker build --progress=plain -f Dockerfile.b -t cv8-order-b:v2 .
 ```
 
 앞쪽 `RUN apk add …`는 CACHED, 뒤쪽 COPY는 다시 처리되는지 봅니다.
@@ -1028,7 +1156,6 @@ sudo docker image ls --filter 'reference=cv8-*'
 | Dockerfile 또는 COPY 파일을 못 찾음 | `pwd`, `ls -la`로 현재 task 폴더와 파일명을 확인합니다. `Dockerfile`의 대소문자와 마지막 `.`을 확인합니다. |
 | `unknown command: docker buildx` | 명령 01의 `sudo apt-get update`와 `sudo apt-get install -y docker-buildx`가 성공했는지 확인한 뒤 버전 확인을 다시 실행합니다. |
 | 빌드 로그가 예시와 다름 | `--progress=plain`과 Buildx를 확인합니다. 단계 번호·소요 시간 대신 RUN/COPY의 CACHED 표시를 봅니다. |
-| Task 2의 apk 설치에서 오래 멈춤 | `Ctrl+C`로 중단하고 명령 21·22·24·25에 `--network=host`가 들어 있는지 확인합니다. 그래도 실패하면 교수자에게 VM 네트워크 상태를 확인받습니다. |
 | Docker Hub 또는 apk 다운로드 실패 | 인터넷·DNS·프록시·속도 제한 오류를 확인합니다. 성공하기 전 다음 단계로 가지 않습니다. 패키지 서버 문제로 A 설치가 실패한 결과를 캐시 비교 결과로 쓰지 않습니다. |
 | 컨테이너 이름이 이미 존재함 | `sudo docker ps -a --filter name=cv8-`로 상태를 확인합니다. 실습 중인 A/B는 start/exec로 이어갑니다. 처음부터 반복할 때만 필요한 결과를 저장하고 해당 이름을 명시해 `sudo docker rm -f 이름`으로 정리합니다. |
 | A의 원본 파일을 못 찾음 | Task 3의 삭제 단계 이후에는 정상입니다. 비교를 다시 시작하려면 기존 A/B를 정리하고 같은 이미지로 새 A/B를 만듭니다. |
@@ -1040,16 +1167,13 @@ sudo docker image ls --filter 'reference=cv8-*'
 
 교안의 Nginx 예제를 별도로 실행했다면 본인이 만든 `cv8-web`도 확인 후 정리합니다. 7주차의 `cv7-web`·`cv7-net`은 이번 정리 대상이 아닙니다.
 
-[교수자 진행 안내](INSTRUCTOR.md) · [실제 검증 기록](VALIDATION.md)
-
 ## 참고 자료
 
 - [Dockerfile 명령과 컨텍스트](https://docs.docker.com/reference/dockerfile/)
 - [빌드 컨텍스트와 .dockerignore](https://docs.docker.com/build/concepts/context/)
-- [빌드 중 RUN의 네트워크 설정](https://docs.docker.com/reference/cli/docker/buildx/build/#network)
 - [빌드 캐시 무효화](https://docs.docker.com/build/cache/invalidation/)
 - [이미지 레이어와 컨테이너의 쓰기 레이어](https://docs.docker.com/engine/storage/drivers/)
 - [docker container diff](https://docs.docker.com/reference/cli/docker/container/diff/)
 - [OCI Runtime Bundle](https://github.com/opencontainers/runtime-spec/blob/main/bundle.md)
 
-그림은 이 실습의 흐름을 설명하기 위해 AI로 생성한 개념도입니다. 실제 출력·저장 경로·레이어 개수는 명령 결과와 검증 기록을 기준으로 확인합니다.
+그림은 이 실습의 흐름을 설명하기 위해 AI로 생성한 개념도입니다. 실제 출력·저장 경로·레이어 개수는 실제 명령 결과를 기준으로 확인합니다.
