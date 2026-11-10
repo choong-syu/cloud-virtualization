@@ -10,7 +10,7 @@
 
 | 구간 | 확인할 질문 | 예상 시간 |
 | --- | --- | ---: |
-| 준비 | Docker와 빌드 도구가 준비되었는가? | 5~10분 |
+| 준비 | Buildx를 설치하고 Docker와 연결할 수 있는가? | 5~10분 |
 | Task 1 | Dockerfile의 파일과 CMD는 언제 사용되는가? | 15분 |
 | 연결 관찰 | 이미지 레이어가 7주차의 rootfs와 어떻게 연결되는가? | 10분 |
 | Task 2 | 입력 파일과 명령 순서가 캐시에 어떤 영향을 주는가? | 20분 |
@@ -28,33 +28,36 @@
 - `sudo docker exec … sh -c '… > 파일'`의 따옴표를 유지합니다. 여기의 `>`는 컨테이너 안에서 처리합니다.
 - 파일 생성 명령은 같은 이름의 기존 파일을 덮어씁니다. 재수강 시 기존 `~/week08-task*` 작업은 먼저 별도 보관합니다. 기존 7주차 자원은 건드리지 않습니다.
 
-### 실행 도구 확인
+### Buildx 설치와 실행 도구 확인
 
-**명령 01: 현재 사용자와 Docker 연결 확인 — 호스트 Bash**
+7주차에 Docker Engine은 설치했지만 **Buildx는 아직 설치하지 않은 상태**로 가정합니다. 아래 설치 명령부터 순서대로 실행합니다. Ubuntu의 `docker.io`를 사용하므로 Buildx도 Ubuntu 패키지인 `docker-buildx`로 설치합니다.
+
+**명령 01: Docker 확인 후 Buildx 설치 — 호스트 Bash**
 
 ```bash
 id -un
 pwd
 sudo docker version
+sudo apt-get update
+sudo apt-get install -y docker-buildx
 sudo docker buildx version
 ```
 
-**확인:** Docker의 `Client`·`Server` 정보와 Buildx 버전이 모두 나와야 합니다. 이미지 빌드에는 Buildx가 필요합니다.
+**확인:** Docker의 `Client`·`Server` 정보가 표시되고, 패키지 설치가 완료된 뒤 마지막 줄에서 Buildx 버전이 나와야 합니다. 이 실습의 빌드 명령은 Buildx를 사용합니다. 설치 오류가 나오면 다음 단계로 넘어가지 않습니다. 이미 Buildx가 설치된 VM에서도 같은 설치 명령을 실행할 수 있습니다.
 
 <details>
-<summary>Docker 또는 Buildx가 없을 때 / Docker 서버에 연결되지 않을 때</summary>
+<summary>Docker 명령이 없거나 Docker 서버에 연결되지 않을 때</summary>
 
-7주차와 같은 Ubuntu 패키지 설치 방식입니다. 이미 정상인 도구는 다시 설치하지 않아도 됩니다. `unknown command: docker buildx`, `unknown flag: --progress`가 나오면 Buildx 설치부터 확인합니다.
+7주차의 Docker 설치 또는 서비스 시작을 완료하지 못한 경우에만 진행합니다. Docker가 정상이라면 위 명령 01의 Buildx 설치로 준비가 완료됩니다.
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y docker.io docker-buildx
+sudo apt-get install -y docker.io
 sudo systemctl start docker
 sudo docker version
-sudo docker buildx version
 ```
 
-Docker 회사 저장소에서 설치된 VM이라면 위 패키지를 혼합하지 말고 교수자에게 설치 방식을 확인합니다. `permission denied`가 나면 문서의 `sudo`를 빠뜨리지 않았는지 봅니다.
+Docker가 정상 연결되면 명령 01로 돌아가 Buildx 설치와 버전 확인까지 완료합니다. Docker 회사 저장소에서 설치된 VM이라면 위 패키지를 혼합하지 말고 교수자에게 설치 방식을 확인합니다. `permission denied`가 나면 문서의 `sudo`를 빠뜨리지 않았는지 봅니다.
 </details>
 
 **이후 명령은 확인이 모두 끝난 다음 진행합니다.**
@@ -631,6 +634,7 @@ sudo docker image ls --filter 'reference=cv8-*'
 | 상황 | 확인·조치 |
 | --- | --- |
 | Dockerfile 또는 COPY 파일을 못 찾음 | `pwd`, `ls -la`로 현재 task 폴더와 파일명을 확인합니다. `Dockerfile`의 대소문자와 마지막 `.`을 확인합니다. |
+| `unknown command: docker buildx` | 명령 01의 `sudo apt-get update`와 `sudo apt-get install -y docker-buildx`가 성공했는지 확인한 뒤 버전 확인을 다시 실행합니다. |
 | 빌드 로그가 예시와 다름 | `--progress=plain`과 Buildx를 확인합니다. 단계 번호·소요 시간 대신 RUN/COPY의 CACHED 표시를 봅니다. |
 | Task 2의 apk 설치에서 오래 멈춤 | `Ctrl+C`로 중단하고 명령 21·22·24·25에 `--network=host`가 들어 있는지 확인합니다. 그래도 실패하면 교수자에게 VM 네트워크 상태를 확인받습니다. |
 | Docker Hub 또는 apk 다운로드 실패 | 인터넷·DNS·프록시·속도 제한 오류를 확인합니다. 성공하기 전 다음 단계로 가지 않습니다. 패키지 서버 문제로 A 설치가 실패한 결과를 캐시 비교 결과로 쓰지 않습니다. |

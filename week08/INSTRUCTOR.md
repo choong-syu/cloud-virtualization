@@ -8,7 +8,7 @@
 
 | 구간 | 명령 | 권장 시간 | 수업 중 확인할 증거 |
 | --- | --- | ---: | --- |
-| 준비 | 01~03 | 5~10분 | Docker Client·Server, Buildx, 베이스 이미지 다운로드 |
+| 준비 | 01~03 | 5~10분 | Docker Client·Server, Buildx 설치·버전 확인, 베이스 이미지 다운로드 |
 | Task 1 | 04~13 | 15분 | CMD 설정, 메시지 출력, 정상 종료, `.dockerignore` 제외 결과 |
 | rootfs 연결 | 14~15 | 10분 | 파일시스템 레이어 목록과 CMD, 컨테이너 안의 `/` |
 | Task 2 | 16~26 | 20분 | 입력 변경 전후 CACHED, A/B 설치 단계의 재사용 차이 |
@@ -36,13 +36,13 @@
 ## 수업 전 준비
 
 - 학생별 Ubuntu 24.04 VM과 sudo 사용 가능 여부를 확인합니다. root 로그인 셸에서 시작하지 않습니다.
-- 7주차와 같은 Ubuntu 패키지의 `docker.io` 설치를 사용합니다. **`docker-buildx`도 확인**합니다. 준비 VM에서 Docker Engine만 설치되고 Buildx가 빠진 경우가 발견되어 학생 문서에 별도 점검·설치 안내를 넣었습니다.
+- 7주차와 같은 Ubuntu 패키지의 `docker.io` 설치를 사용합니다. **Buildx는 미설치 상태로 가정**하고 명령 01에서 `sudo apt-get update` → `sudo apt-get install -y docker-buildx` → `sudo docker buildx version`을 필수 준비 단계로 진행합니다. 실제 준비 VM에서도 Docker Engine만 설치되고 Buildx가 빠져 있었습니다.
 - Docker 회사 저장소에서 설치한 VM에 Ubuntu의 `docker.io`·`docker-buildx`를 혼합 설치하지 않습니다. 먼저 해당 VM의 설치 방식을 확인합니다.
 - Docker Hub에서 `busybox:1.36`과 `alpine:3.23`을 받을 수 있어야 합니다. Task 2의 `apk add`에는 Alpine 패키지 저장소 접근도 필요합니다.
 - 버전·이미지 ID·크기·단계 번호를 정답으로 고정하지 않습니다. 같은 캐시 비교 도중 베이스 이미지를 다시 pull하거나 빌드 캐시를 지우지 않습니다.
 - README를 GitHub에서 읽으며 파일 생성 블록을 복사하는 방식입니다. Git 설치, 저장소 복제, 준비 스크립트의 사전 배포는 필요 없습니다.
 
-도구 확인은 학생 문서 명령 01의 `sudo docker version`과 `sudo docker buildx version`을 모두 통과한 뒤 진행합니다. Client만 표시되고 Server 연결이 실패한 상태에서 다음 실습으로 넘어가지 않습니다.
+학생 문서 명령 01에서 Docker 연결 확인 → Buildx 설치 → Buildx 버전 확인을 마친 뒤 다음 실습으로 진행합니다. Buildx 설치를 선택 안내로 건너뛰지 않습니다. Client만 표시되고 Server 연결이 실패하거나 패키지 설치 오류가 난 상태에서 다음 실습으로 넘어가지 않습니다.
 
 ### 수업 VM에서 확인한 빌드 네트워크 문제
 
@@ -75,7 +75,7 @@
 | 명령 09 직후 프롬프트 복귀 | 정상입니다. 명령 10에서 Exited (0)와 메시지 로그를 확인합니다. |
 | 명령 34·36·45의 파일 없음 | 의도한 결과입니다. 0이 아닌 종료 코드를 실패한 실습으로 채점하지 않습니다. |
 | `container is not running` | sleep 시간이 지났는지 확인하고 해당 컨테이너를 start합니다. cat 컨테이너는 exec 대상으로 사용하지 않습니다. |
-| `unknown command: docker buildx` | 학생 문서의 Ubuntu 패키지 설치 안내에 따라 Buildx부터 확인합니다. |
+| `unknown command: docker buildx` | 명령 01의 Ubuntu `docker-buildx` 설치가 완료됐는지 확인한 뒤 버전 확인을 다시 실행합니다. |
 | Dockerfile/COPY 입력 없음 | 현재 task 디렉터리, 파일 대소문자, 마지막 컨텍스트 인자를 확인합니다. |
 | `>` 프롬프트가 계속 표시됨 | heredoc의 마지막 EOF 누락 여부를 봅니다. Ctrl+C 후 전체 블록을 다시 입력합니다. |
 | Docker Hub/apk 다운로드 실패 | 네트워크 문제를 먼저 해결합니다. 설치 실패를 캐시 무효화의 증거로 사용하지 않습니다. |
@@ -96,7 +96,8 @@
 | 컨테이너 | `cv8-task1-run`, `cv8-a`, `cv8-b`, `cv8-lifecycle`, `cv8-lifecycle-new`; 이름 없는 `--rm` 컨테이너는 실행 후 자동 삭제 |
 | 이미지 태그 | `cv8-task1:v1/v2`, `cv8-context:v1`, `cv8-order-a:v1/v2`, `cv8-order-b:v1/v2`, `cv8-file:v1` |
 | 다운로드·캐시 | BusyBox·Alpine 베이스 이미지, 빌드 캐시, 이미지 안의 curl과 의존성 |
-| 필요시 설치 | Ubuntu `docker.io`, `docker-buildx`와 의존 패키지; Docker 서비스 시작 |
+| 필수 설치 | Ubuntu `docker-buildx`와 필요한 의존 패키지 |
+| Docker 준비 누락 시 | Ubuntu `docker.io` 설치와 Docker 서비스 시작 후 명령 01 재진행 |
 
 정리는 컨테이너 → 직접 빌드한 이미지 태그 순서입니다. 명령 47~48은 이번 이름만 지정하며 프로젝트 원본·베이스 이미지·빌드 캐시는 남깁니다. `cv7-*` 컨테이너와 `cv7-net` 등 이전 주차 자원은 정리 대상이 아닙니다. 전역 prune을 사용하지 않습니다. 별도로 교안의 웹 예제를 실행했다면 본인이 만든 `cv8-web`도 목록에서 확인한 뒤 선택적으로 정리합니다.
 
