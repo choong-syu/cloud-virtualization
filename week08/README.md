@@ -151,18 +151,6 @@ sudo docker pull alpine:3.23
 
 **설정 이유:** 컨테이너의 패키지 다운로드가 중간에 멈추지 않도록 Docker 기본 브리지의 MTU를 VM의 외부 통신 인터페이스에 맞춥니다. 이 준비는 Task 1을 시작하기 전에 한 번 진행합니다.
 
-외부 통신에 사용하는 인터페이스를 확인합니다. 출력에서 `dev` 뒤의 이름을 봅니다.
-
-```bash
-ip -4 route get 1.1.1.1
-```
-
-인터페이스별 MTU를 확인합니다. 수업 VM에서는 외부 인터페이스가 `ens3`, MTU가 `1442`일 수 있으며, 아래 설정은 해당 VM의 실제 값을 자동으로 읽습니다.
-
-```bash
-ip -o link show
-```
-
 Docker 재시작 뒤 기존 실행 상태를 복구할 수 있도록, 현재 실행 중인 컨테이너 이름을 저장합니다.
 
 ```bash
@@ -175,7 +163,7 @@ sudo docker ps --format '{{.Names}}' > "$HOME/week08-running-before-mtu.txt"
 cat "$HOME/week08-running-before-mtu.txt"
 ```
 
-기존 Docker 설정을 백업하고 `mtu` 항목을 추가·수정합니다. 아래 블록은 마지막 `PY`까지 한 번에 복사합니다. 다른 설정은 유지하며, 설정 검증이 실패하면 기존 파일을 교체하지 않습니다.
+아래 스크립트가 외부 통신 인터페이스의 실제 MTU를 자동으로 읽고, 기존 Docker 설정을 백업한 뒤 `mtu` 항목을 추가·수정합니다. 마지막 `PY`까지 한 번에 복사합니다. 다른 설정은 유지하며, 설정 검증이 실패하면 기존 파일을 교체하지 않습니다.
 
 ```bash
 sudo python3 - <<'PY'
@@ -218,7 +206,7 @@ finally:
 PY
 ```
 
-`configuration OK`와 `설정 저장 완료`가 표시되면 Docker를 재시작합니다. 오류가 나오면 재시작하지 말고 해당 오류부터 확인합니다.
+`configuration OK`와 `설정 저장 완료`가 표시되면, 출력된 인터페이스 이름과 MTU 값을 확인한 뒤 Docker를 재시작합니다. 예를 들어 `ens3의 MTU 1442 적용`으로 표시될 수 있으며, 이후 확인은 이 출력값을 기준으로 합니다. 오류가 나오면 재시작하지 말고 해당 오류부터 확인합니다.
 
 ```bash
 sudo systemctl restart docker
@@ -242,22 +230,10 @@ xargs -r sudo docker start < "$HOME/week08-running-before-mtu.txt"
 sudo docker ps
 ```
 
-Docker 기본 브리지의 MTU를 확인합니다.
-
-```bash
-ip -o link show docker0
-```
-
-새 컨테이너의 네트워크 인터페이스 MTU도 같은 값인지 확인합니다. 외부 인터페이스가 `1442`였다면 두 확인 결과도 `1442`여야 합니다.
+새 컨테이너의 네트워크 인터페이스 MTU가 앞서 `설정 저장 완료`에 표시된 값과 같은지 확인합니다. 설정 출력이 `1442`였다면 아래 결과도 `1442`여야 합니다.
 
 ```bash
 sudo docker run --rm alpine:3.23 cat /sys/class/net/eth0/mtu
-```
-
-컨테이너에서 Alpine 패키지 목록을 다운로드합니다. `saved`와 같은 저장 완료 메시지가 나오고 오류 없이 끝나는지 확인합니다. 진행률 표시는 터미널 환경에 따라 달라질 수 있습니다.
-
-```bash
-sudo docker run --rm alpine:3.23 sh -c 'wget -T 20 -O /dev/null "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/$(apk --print-arch)/APKINDEX.tar.gz"'
 ```
 
 마지막으로 빌드 중 패키지 설치가 완료되는지 확인합니다. 아래는 하나의 빌드 명령이므로 마지막 `EOF`까지 함께 복사합니다. **`--no-cache`는 이 준비 확인에서만 사용**하고, 이후 캐시 비교 실습에는 추가하지 않습니다.
