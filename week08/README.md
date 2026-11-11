@@ -99,26 +99,13 @@ sudo docker buildx version
 
 **확인:** Docker의 `Client`·`Server` 정보가 표시되고, 패키지 설치가 완료된 뒤 마지막 버전 확인 명령에서 Buildx 버전이 나와야 합니다. 이 실습의 빌드 명령은 Buildx를 사용합니다. 설치 오류가 나오면 다음 단계로 넘어가지 않습니다. 이미 Buildx가 설치된 VM에서도 같은 설치 명령을 실행할 수 있습니다.
 
-
 **이후 명령은 확인이 모두 끝난 다음 진행합니다.**
 
 ### Docker 네트워크 MTU 설정
 
 **명령 02: Docker 기본 브리지 MTU 설정 — 호스트 Bash**
 
-**설정 이유:** VM의 외부 네트워크보다 컨테이너의 MTU가 크면 빌드 중 패키지 다운로드가 멈출 수 있습니다. Docker 설치 후 실습 컨테이너를 만들기 전에 `/etc/docker/daemon.json`의 `mtu`를 VM의 외부 인터페이스와 같은 값으로 설정합니다. 이미 같은 값으로 설정했다면 생략합니다.
-
-외부 통신에 사용하는 인터페이스 이름을 확인합니다.
-
-```bash
-ip route get 1.1.1.1
-```
-
-출력의 `dev` 뒤에 나온 인터페이스의 MTU를 확인합니다. 아래 `ens3`는 실제 인터페이스 이름으로 바꿉니다.
-
-```bash
-ip link show ens3
-```
+**설정 이유:** 수업 VM의 네트워크에 맞춰 Docker 기본 브리지의 MTU를 `1442`로 설정합니다. 컨테이너에서 패키지를 다운로드할 때 MTU 차이로 통신이 멈추는 문제를 방지하기 위한 설정입니다.
 
 Docker 설정 파일을 엽니다.
 
@@ -126,7 +113,7 @@ Docker 설정 파일을 엽니다.
 sudo nano /etc/docker/daemon.json
 ```
 
-파일이 비어 있다면 아래 내용을 입력합니다. `1442`는 예시이며, 앞에서 확인한 `mtu` 값으로 바꿉니다. 기존 설정이 있으면 다른 항목은 유지하고 `mtu` 항목만 추가하거나 수정합니다.
+파일이 비어 있다면 아래 내용을 입력합니다. 기존 설정이 있으면 다른 항목은 유지하고 `mtu` 항목만 `1442`로 추가하거나 수정합니다.
 
 ```json
 {
@@ -134,19 +121,11 @@ sudo nano /etc/docker/daemon.json
 }
 ```
 
-`Ctrl+O`, `Enter`로 저장하고 `Ctrl+X`로 종료합니다. 설정을 적용하려면 Docker를 재시작합니다. 실행 중인 컨테이너는 잠시 중단될 수 있습니다.
+`Ctrl+O`, `Enter`로 저장하고 `Ctrl+X`로 종료합니다. Docker를 재시작해 설정을 적용합니다.
 
 ```bash
 sudo systemctl restart docker
 ```
-
-서비스 상태가 `active`인지 확인합니다. 오류가 나면 설정 파일의 JSON 문법과 MTU 값을 확인합니다.
-
-```bash
-sudo systemctl is-active docker
-```
-
-[Docker 기본 브리지 MTU 설정 참고](https://docs.docker.com/engine/network/drivers/bridge/#configure-the-default-bridge-network)
 
 **명령 03: 베이스 이미지 준비 — 호스트 Bash**
 
@@ -163,13 +142,6 @@ sudo docker pull alpine:3.23
 ```
 
 두 다운로드가 모두 성공해야 진행합니다. 최초 실행에는 네트워크가 필요합니다. 태그는 업데이트될 수 있으므로 이미지 ID·크기·digest를 예시 숫자에 맞추지 않습니다. 같은 수업의 캐시 비교 도중에는 다시 pull하거나 캐시를 삭제하지 않습니다.
-
-새 컨테이너에 설정한 MTU가 적용됐는지 확인합니다. 앞서 설정한 값과 같으면 Task 1로 진행합니다.
-
-```bash
-sudo docker run --rm alpine:3.23 cat /sys/class/net/eth0/mtu
-```
-
 
 ---
 
