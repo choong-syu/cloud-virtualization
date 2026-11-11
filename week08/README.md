@@ -39,18 +39,6 @@
 
 **명령 01: Docker 확인 후 Buildx 설치 — 호스트 Bash**
 
-현재 사용자 이름을 확인합니다.
-
-```bash
-id -un
-```
-
-현재 작업 폴더를 확인합니다.
-
-```bash
-pwd
-```
-
 Docker의 Client·Server 연결을 확인합니다.
 
 ```bash
@@ -59,30 +47,10 @@ sudo docker version
 
 `docker: command not found`가 나오거나 `Server` 연결에 실패하면 아래의 **「Docker 명령이 없거나 Docker 서버에 연결되지 않을 때」**를 펼쳐 먼저 해결합니다. Client·Server가 모두 확인되기 전에는 Buildx 설치로 넘어가지 않습니다.
 
-Client·Server 정보가 정상적으로 표시되면 패키지 목록을 갱신합니다.
-
-```bash
-sudo apt-get update
-```
-
-Buildx를 설치합니다. 설치가 완료될 때까지 기다립니다.
-
-```bash
-sudo apt-get install -y docker-buildx
-```
-
-Buildx 버전이 표시되는지 확인합니다.
-
-```bash
-sudo docker buildx version
-```
-
-**확인:** Docker의 `Client`·`Server` 정보가 표시되고, 패키지 설치가 완료된 뒤 마지막 버전 확인 명령에서 Buildx 버전이 나와야 합니다. 이 실습의 빌드 명령은 Buildx를 사용합니다. 설치 오류가 나오면 다음 단계로 넘어가지 않습니다. 이미 Buildx가 설치된 VM에서도 같은 설치 명령을 실행할 수 있습니다.
-
 <details>
 <summary>Docker 명령이 없거나 Docker 서버에 연결되지 않을 때</summary>
 
-7주차의 Docker 설치 또는 서비스 시작을 완료하지 못한 경우에만 진행합니다. Docker가 정상이라면 위 명령 01의 Buildx 설치로 준비가 완료됩니다.
+7주차의 Docker 설치 또는 서비스 시작을 완료하지 못한 경우에만 진행합니다. Docker가 정상이라면 이 안내를 건너뛰고 아래 Buildx 설치로 진행합니다.
 
 Ubuntu 패키지 목록을 갱신합니다.
 
@@ -108,32 +76,77 @@ Docker의 Client·Server가 정상 연결되는지 확인합니다.
 sudo docker version
 ```
 
-Docker가 정상 연결되면 명령 01로 돌아가 Buildx 설치와 버전 확인까지 완료합니다. Docker 회사 저장소에서 설치된 VM이라면 위 패키지를 혼합하지 말고 교수자에게 설치 방식을 확인합니다. `permission denied`가 나면 문서의 `sudo`를 빠뜨리지 않았는지 봅니다.
+Docker가 정상 연결되면 아래 Buildx 설치와 버전 확인을 진행합니다. Docker 회사 저장소에서 설치된 VM이라면 위 패키지를 혼합하지 말고 교수자에게 설치 방식을 확인합니다. `permission denied`가 나면 문서의 `sudo`를 빠뜨리지 않았는지 봅니다.
 </details>
+
+Client·Server 정보가 정상적으로 표시되면 패키지 목록을 갱신합니다.
+
+```bash
+sudo apt-get update
+```
+
+Buildx를 설치합니다. 설치가 완료될 때까지 기다립니다.
+
+```bash
+sudo apt-get install -y docker-buildx
+```
+
+Buildx 버전이 표시되는지 확인합니다.
+
+```bash
+sudo docker buildx version
+```
+
+**확인:** Docker의 `Client`·`Server` 정보가 표시되고, 패키지 설치가 완료된 뒤 마지막 버전 확인 명령에서 Buildx 버전이 나와야 합니다. 이 실습의 빌드 명령은 Buildx를 사용합니다. 설치 오류가 나오면 다음 단계로 넘어가지 않습니다. 이미 Buildx가 설치된 VM에서도 같은 설치 명령을 실행할 수 있습니다.
+
 
 **이후 명령은 확인이 모두 끝난 다음 진행합니다.**
 
-**명령 02: 기존 실습 자원과 폴더 확인 — 호스트 Bash**
+### Docker 네트워크 MTU 설정
 
-기존 8주차 컨테이너를 확인합니다.
+**명령 02: Docker 기본 브리지 MTU 설정 — 호스트 Bash**
 
-```bash
-sudo docker ps -a --filter name=cv8- --format 'table {{.Names}}\t{{.Status}}'
-```
+**설정 이유:** VM의 외부 네트워크보다 컨테이너의 MTU가 크면 빌드 중 패키지 다운로드가 멈출 수 있습니다. Docker 설치 후 실습 컨테이너를 만들기 전에 `/etc/docker/daemon.json`의 `mtu`를 VM의 외부 인터페이스와 같은 값으로 설정합니다. 이미 같은 값으로 설정했다면 생략합니다.
 
-기존 8주차 이미지 태그를 확인합니다.
+외부 통신에 사용하는 인터페이스 이름을 확인합니다.
 
 ```bash
-sudo docker image ls --filter 'reference=cv8-*'
+ip route get 1.1.1.1
 ```
 
-기존 실습 폴더를 확인합니다. 폴더가 없으면 출력이 없어도 정상입니다.
+출력의 `dev` 뒤에 나온 인터페이스의 MTU를 확인합니다. 아래 `ens3`는 실제 인터페이스 이름으로 바꿉니다.
 
 ```bash
-ls -d "$HOME"/week08-task* 2>/dev/null || true
+ip link show ens3
 ```
 
-첫 실습이면 목록에 8주차 자원이 없습니다. 이미 있다면 아래 **재실행 안내**를 먼저 읽습니다. `cv7-*` 자원이 보여도 이번 실습에서 지우지 않습니다.
+Docker 설정 파일을 엽니다.
+
+```bash
+sudo nano /etc/docker/daemon.json
+```
+
+파일이 비어 있다면 아래 내용을 입력합니다. `1442`는 예시이며, 앞에서 확인한 `mtu` 값으로 바꿉니다. 기존 설정이 있으면 다른 항목은 유지하고 `mtu` 항목만 추가하거나 수정합니다.
+
+```json
+{
+  "mtu": 1442
+}
+```
+
+`Ctrl+O`, `Enter`로 저장하고 `Ctrl+X`로 종료합니다. 설정을 적용하려면 Docker를 재시작합니다. 실행 중인 컨테이너는 잠시 중단될 수 있습니다.
+
+```bash
+sudo systemctl restart docker
+```
+
+서비스 상태가 `active`인지 확인합니다. 오류가 나면 설정 파일의 JSON 문법과 MTU 값을 확인합니다.
+
+```bash
+sudo systemctl is-active docker
+```
+
+[Docker 기본 브리지 MTU 설정 참고](https://docs.docker.com/engine/network/drivers/bridge/#configure-the-default-bridge-network)
 
 **명령 03: 베이스 이미지 준비 — 호스트 Bash**
 
@@ -151,111 +164,12 @@ sudo docker pull alpine:3.23
 
 두 다운로드가 모두 성공해야 진행합니다. 최초 실행에는 네트워크가 필요합니다. 태그는 업데이트될 수 있으므로 이미지 ID·크기·digest를 예시 숫자에 맞추지 않습니다. 같은 수업의 캐시 비교 도중에는 다시 pull하거나 캐시를 삭제하지 않습니다.
 
-### Docker 네트워크 MTU 사전 설정
-
-**설정 이유:** 컨테이너의 패키지 다운로드가 중간에 멈추지 않도록 Docker 기본 브리지의 MTU를 VM의 외부 통신 인터페이스에 맞춥니다. 이 준비는 Task 1을 시작하기 전에 한 번 진행합니다.
-
-Docker 재시작 뒤 기존 실행 상태를 복구할 수 있도록, 현재 실행 중인 컨테이너 이름을 저장합니다.
-
-```bash
-sudo docker ps --format '{{.Names}}' > "$HOME/week08-running-before-mtu.txt"
-```
-
-저장한 목록을 확인합니다. **Docker 재시작 중에는 이 컨테이너들의 서비스가 잠시 중단될 수 있습니다.**
-
-```bash
-cat "$HOME/week08-running-before-mtu.txt"
-```
-
-아래 스크립트가 외부 통신 인터페이스의 실제 MTU를 자동으로 읽고, 기존 Docker 설정을 백업한 뒤 `mtu` 항목을 추가·수정합니다. 마지막 `PY`까지 한 번에 복사합니다. 다른 설정은 유지하며, 설정 검증이 실패하면 기존 파일을 교체하지 않습니다.
-
-```bash
-sudo python3 - <<'PY'
-import json
-import os
-import shutil
-import stat
-import subprocess
-import tempfile
-import time
-from pathlib import Path
-
-route = json.loads(subprocess.check_output(
-    ["ip", "-j", "-4", "route", "get", "1.1.1.1"], text=True))[0]
-iface = route["dev"]
-mtu = int(Path(f"/sys/class/net/{iface}/mtu").read_text())
-config = Path("/etc/docker/daemon.json")
-settings = json.loads(config.read_text()) if config.exists() else {}
-if not isinstance(settings, dict):
-    raise SystemExit("daemon.json은 JSON 객체여야 합니다. 기존 설정을 확인하세요.")
-config.parent.mkdir(parents=True, exist_ok=True)
-mode = stat.S_IMODE(config.stat().st_mode) if config.exists() else 0o644
-if config.exists():
-    backup = config.with_name(f"daemon.json.before-mtu-{time.time_ns()}")
-    shutil.copy2(config, backup)
-    print(f"기존 설정 백업: {backup}", flush=True)
-settings["mtu"] = mtu
-with tempfile.NamedTemporaryFile(mode="w", dir=config.parent,
-                                 prefix=".mtu-", suffix=".json", delete=False) as f:
-    json.dump(settings, f, indent=2)
-    f.write("\n")
-    candidate = Path(f.name)
-try:
-    subprocess.run(["dockerd", "--validate", f"--config-file={candidate}"], check=True)
-    os.chmod(candidate, mode)
-    os.replace(candidate, config)
-    print(f"설정 저장 완료: {iface}의 MTU {mtu} 적용")
-finally:
-    candidate.unlink(missing_ok=True)
-PY
-```
-
-`configuration OK`와 `설정 저장 완료`가 표시되면, 출력된 인터페이스 이름과 MTU 값을 확인한 뒤 Docker를 재시작합니다. 예를 들어 `ens3의 MTU 1442 적용`으로 표시될 수 있으며, 이후 확인은 이 출력값을 기준으로 합니다. 오류가 나오면 재시작하지 말고 해당 오류부터 확인합니다.
-
-```bash
-sudo systemctl restart docker
-```
-
-Docker 서비스가 `active`인지 확인합니다. 재시작에 실패했다면 다음 단계로 진행하지 않습니다. 이 경우 사전 설정을 처음부터 반복해 실행 중인 컨테이너 목록을 덮어쓰지 말고, 저장한 목록을 유지한 채 오류를 해결합니다.
-
-```bash
-sudo systemctl is-active docker
-```
-
-앞서 실행 중이었던 컨테이너만 다시 시작합니다. 목록이 비어 있으면 실행하지 않고 넘어갑니다.
-
-```bash
-xargs -r sudo docker start < "$HOME/week08-running-before-mtu.txt"
-```
-
-실행 상태를 확인합니다. 앞서 저장한 목록의 컨테이너가 모두 표시되고 상태가 `Up`인지 비교합니다. 목록이 비어 있었다면 컨테이너가 표시되지 않아도 정상입니다.
-
-```bash
-sudo docker ps
-```
-
-새 컨테이너의 네트워크 인터페이스 MTU가 앞서 `설정 저장 완료`에 표시된 값과 같은지 확인합니다. 설정 출력이 `1442`였다면 아래 결과도 `1442`여야 합니다.
+새 컨테이너에 설정한 MTU가 적용됐는지 확인합니다. 앞서 설정한 값과 같으면 Task 1로 진행합니다.
 
 ```bash
 sudo docker run --rm alpine:3.23 cat /sys/class/net/eth0/mtu
 ```
 
-마지막으로 빌드 중 패키지 설치가 완료되는지 확인합니다. 아래는 하나의 빌드 명령이므로 마지막 `EOF`까지 함께 복사합니다. **`--no-cache`는 이 준비 확인에서만 사용**하고, 이후 캐시 비교 실습에는 추가하지 않습니다.
-
-```bash
-sudo docker build --no-cache --progress=plain -t cv8-mtu-check:verify - <<'EOF'
-FROM alpine:3.23
-RUN apk add --no-cache curl && curl --version
-EOF
-```
-
-curl 버전 출력과 빌드 완료를 확인한 뒤, 준비 확인용 이미지 태그를 삭제합니다.
-
-```bash
-sudo docker image rm cv8-mtu-check:verify
-```
-
-확인이 모두 끝나면 Task 1로 진행합니다. [Docker 기본 브리지 설정 참고](https://docs.docker.com/engine/network/drivers/bridge/#configure-the-default-bridge-network)
 
 ---
 
