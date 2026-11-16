@@ -107,18 +107,15 @@ sudo docker buildx version
 
 **설정 이유:** 수업 VM의 네트워크에 맞춰 Docker 기본 브리지의 MTU를 `1442`로 설정합니다. 컨테이너에서 패키지를 다운로드할 때 MTU 차이로 통신이 멈추는 문제를 방지하기 위한 설정입니다.
 
-Docker 설정 파일을 엽니다.
+Docker 설정 파일을 새로 생성하고 MTU 값을 1442로 설정합니다.
 
 ```bash
-sudo nano /etc/docker/daemon.json
-```
-
-파일이 비어 있다면 아래 내용을 입력합니다. 기존 설정이 있으면 다른 항목은 유지하고 `mtu` 항목만 `1442`로 추가하거나 수정합니다.
-
-```json
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
 {
   "mtu": 1442
 }
+EOF
 ```
 
 `Ctrl+O`, `Enter`로 저장하고 `Ctrl+X`로 종료합니다. Docker를 재시작해 설정을 적용합니다.
