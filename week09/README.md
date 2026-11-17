@@ -60,6 +60,10 @@ sudo systemctl start docker
 설치 후 명령 01을 다시 확인합니다. Docker가 이미 정상이라면 서비스를 재시작할 필요가 없습니다.
 </details>
 
+**Docker 실행**
+
+다음 명령으로 Docker를 실행합니다. 이미 실행 중이면 상태 메시지만 표시합니다.
+
 ```bash
 if systemctl is-active --quiet docker; then
   echo "Docker 실행 중"
