@@ -60,7 +60,7 @@ sudo systemctl start docker
 설치 후 명령 01을 다시 확인합니다. Docker가 이미 정상이라면 서비스를 재시작할 필요가 없습니다.
 </details>
 
-**Docker 실행**
+명령 02: Docker 실행
 
 다음 명령으로 Docker를 실행합니다. 이미 실행 중이면 상태 메시지만 표시합니다.
 
@@ -74,7 +74,7 @@ fi
 
 Docker가 실행 중이면 메시지를 표시하고, 중지되어 있으면 시작합니다. 오류가 나오면 위 설치 안내를 확인한 뒤 진행합니다.
 
-명령 02: 이미지와 통신 도구 준비 — 호스트 Bash
+명령 03: 이미지와 통신 도구 준비 — 호스트 Bash
 
 ```bash
 sudo docker pull python:3.12-slim
@@ -86,7 +86,7 @@ curl --version
 
 curl만 없다면 `sudo apt-get install -y curl`로 설치합니다.
 
-명령 03: 이번 주차 작업 폴더 준비 — 호스트 Bash
+명령 04: 이번 주차 작업 폴더 준비 — 호스트 Bash
 
 ```bash
 mkdir -p "$HOME/week09-report" "$HOME/week09-web"
@@ -106,7 +106,7 @@ pwd
 
 그림 읽기: `python /app/report.py`의 절대 경로는 프로그램을 찾는 위치만 지정합니다. 프로그램이 상대 경로 `servers.csv`를 읽을 때는 현재 작업 디렉터리를 기준으로 찾으므로, 이 예제에서는 `WORKDIR /app`으로 기준을 맞춥니다. 호스트의 빌드 컨텍스트와 컨테이너 내부 `/app`은 서로 다른 위치입니다.
 
-명령 04: 예제 서버 데이터 생성 — 호스트 Bash
+명령 05: 예제 서버 데이터 생성 — 호스트 Bash
 
 ```bash
 cat > servers.csv <<'EOF'
@@ -121,7 +121,7 @@ EOF
 
 CPU와 메모리는 비교용 가상 값이며 백분율로 출력합니다.
 
-명령 05: Server Report 프로그램 생성 — 호스트 Bash
+명령 06: Server Report 프로그램 생성 — 호스트 Bash
 
 ![report.py의 입력과 출력: CSV와 버전 파일, 환경 변수와 인자를 읽어 터미널에 서버 보고서 출력](images/08-report-input-output.png)
 
@@ -227,7 +227,7 @@ shown=3/5
 
 여기서 만든 `version.txt`는 미리보기용입니다. 다음 단계의 `.dockerignore`로 빌드 컨텍스트에서 제외하며, 이미지 안의 버전 파일은 Dockerfile의 RUN으로 새로 만듭니다.
 
-명령 06: 빌드 컨텍스트 범위 지정 — 호스트 Bash
+명령 07: 빌드 컨텍스트 범위 지정 — 호스트 Bash
 
 `.dockerignore`는 빌드 컨텍스트에 포함하지 않을 파일과 디렉터리를 지정하여, Docker 빌드 과정에서 불필요한 파일이 전달되거나 사용되지 않도록 하는 설정 파일입니다.
 
@@ -241,7 +241,7 @@ EOF
 
 8주차의 `.dockerignore`를 복습합니다. `*`로 모든 파일을 제외한 뒤, `!`로 `report.py`와 `servers.csv`만 다시 포함합니다. 빌드에 사용하는 Dockerfile과 `.dockerignore`는 제외 목록에 있어도 Docker가 빌더에 전달하므로 별도로 예외 처리할 필요가 없습니다. 인증 정보는 이 폴더 밖에 두며 `COPY`도 필요한 파일만 지정합니다.
 
-명령 07: WORKDIR가 없는 이미지 제작 — 호스트 Bash
+명령 08: WORKDIR가 없는 이미지 제작 — 호스트 Bash
 
 ※ `COPY` 명령은 이미지 내부에 목적지 디렉터리(`/app/`)가 없으면 자동으로 생성한 후 파일을 복사함.
 
@@ -260,7 +260,7 @@ EOF
 sudo docker build -f Dockerfile.no-workdir -t cv9-report:no-workdir .
 ```
 
-명령 08: 의도한 경로 오류와 실행 시 복구 관찰 — 호스트 Bash
+명령 09: 의도한 경로 오류와 실행 시 복구 관찰 — 호스트 Bash
 
 ```bash
 sudo docker run --rm cv9-report:no-workdir
@@ -274,7 +274,7 @@ sudo docker run --rm -w /app cv9-report:no-workdir
 
 이번에는 버전 1.0, basic 모드, 서버 2개가 출력됩니다. `-w`는 이 컨테이너의 작업 디렉터리만 바꿉니다.
 
-명령 09: WORKDIR를 이미지 기본 설정에 기록 — 호스트 Bash
+명령 10: WORKDIR를 이미지 기본 설정에 기록 — 호스트 Bash
 
 ```bash
 cat > Dockerfile <<'EOF'
@@ -318,7 +318,7 @@ sudo docker image inspect cv9-report:workdir --format '{{.Config.WorkingDir}}'
 
 그림 읽기: `APP_VERSION`은 빌드 중 `RUN`이 `version.txt`를 만드는 데 쓰고, `REPORT_MODE`는 컨테이너 실행 시 프로그램이 읽습니다. ARG 변수가 런타임 환경에 자동 전달되지는 않아도 그 값으로 만든 파일은 남습니다. `-e`로 실행 환경을 바꾸어도 이미 만들어진 버전 파일이나 원본 이미지 설정은 바뀌지 않습니다.
 
-명령 10: 빌드 버전과 실행 모드를 가진 Dockerfile 작성 — 호스트 Bash
+명령 11: 빌드 버전과 실행 모드를 가진 Dockerfile 작성 — 호스트 Bash
 
 ```bash
 cat > Dockerfile <<'EOF'
@@ -334,7 +334,7 @@ EOF
 
 `RUN`은 빌드 도중 실행되어 파일에 값을 남깁니다. `CMD`는 빌드 도중 실행되지 않고 컨테이너 실행의 기본값으로 기록됩니다.
 
-명령 11: 같은 Dockerfile로 두 버전 빌드 — 호스트 Bash
+명령 12: 같은 Dockerfile로 두 버전 빌드 — 호스트 Bash
 
 ```bash
 sudo docker build --progress=plain -t cv9-report:cmd-v1 .
@@ -346,7 +346,7 @@ sudo docker build --progress=plain --build-arg APP_VERSION=2.0 -t cv9-report:cmd
 
 첫 번째는 ARG 기본값 1.0, 두 번째는 전달한 2.0을 사용합니다. `-t`는 이미지 이름표이고 `--build-arg`는 빌드에 전달하는 값입니다. `:v2`라는 이름만 붙인다고 파일 속 버전이 2.0으로 바뀌지 않습니다.
 
-명령 12: 파일에 남은 버전 확인 — 호스트 Bash
+명령 13: 파일에 남은 버전 확인 — 호스트 Bash
 
 ```bash
 sudo docker run --rm cv9-report:cmd-v1
@@ -358,7 +358,7 @@ sudo docker run --rm cv9-report:cmd-v2
 
 첫 줄의 `version=1.0`과 `version=2.0`을 비교합니다. 둘 다 `mode=basic`입니다.
 
-명령 13: ARG는 실행 환경 변수로 자동 전달되지 않음 확인 — 호스트 Bash
+명령 14: ARG는 실행 환경 변수로 자동 전달되지 않음 확인 — 호스트 Bash
 
 ```bash
 sudo docker run --rm cv9-report:cmd-v2 sh -c '
@@ -379,7 +379,7 @@ version file=2.0
 
 `APP_VERSION`이라는 환경 변수는 없지만, 빌드할 때 그 값으로 만든 파일은 남았습니다. 이미지 뒤의 `sh ...`가 현재 이미지의 CMD 전체를 대체했습니다.
 
-명령 14: 동일한 이미지의 실행 모드만 변경 — 호스트 Bash
+명령 15: 동일한 이미지의 실행 모드만 변경 — 호스트 Bash
 
 ```bash
 sudo docker run --rm -e REPORT_MODE=detail cv9-report:cmd-v2
@@ -405,7 +405,7 @@ sudo docker run --rm -e APP_VERSION=9.9 cv9-report:cmd-v2
 
 여전히 `version=2.0`입니다. 실행 환경 변수를 추가해도 이미 빌드된 `version.txt`는 바뀌지 않습니다. 프로그램은 버전 환경 변수가 아니라 버전 파일을 읽습니다.
 
-명령 15: 이미지의 실행 환경 변수 확인 — 호스트 Bash
+명령 16: 이미지의 실행 환경 변수 확인 — 호스트 Bash
 
 ```bash
 sudo docker image inspect cv9-report:cmd-v2 --format '{{json .Config.Env}}'
@@ -421,7 +421,7 @@ sudo docker image inspect cv9-report:cmd-v2 --format '{{json .Config.Env}}'
 
 그림 읽기: 아래 최종 Dockerfile의 exec form에서는 `ENTRYPOINT`가 `python report.py`를, `CMD`가 기본 인자 `--limit 2`를 정합니다. 이미지 뒤에 `--limit 3`을 쓰면 기존 CMD를 대체한 뒤 ENTRYPOINT에 붙습니다. 인자가 누적되는 것이 아니며, `-e` 같은 Docker 옵션은 이미지 이름 앞에 둡니다.
 
-명령 16: CMD만 있는 이미지의 명령 교체 — 호스트 Bash
+명령 17: CMD만 있는 이미지의 명령 교체 — 호스트 Bash
 
 ```bash
 sudo docker run --rm cv9-report:cmd-v2 python report.py --limit 3
@@ -429,7 +429,7 @@ sudo docker run --rm cv9-report:cmd-v2 python report.py --limit 3
 
 서버 3개가 나옵니다. CMD 전체를 대체하므로 `python report.py`도 다시 썼습니다. 이 이미지 뒤에 `--limit 3`만 쓰면 Docker가 `--limit`을 실행 파일로 해석하여 실패합니다.
 
-명령 17: 실행 프로그램과 기본 인자를 나누어 최종 이미지 제작 — 호스트 Bash
+명령 18: 실행 프로그램과 기본 인자를 나누어 최종 이미지 제작 — 호스트 Bash
 
 ```bash
 cat > Dockerfile <<'EOF'
@@ -454,7 +454,7 @@ sudo docker build --build-arg APP_VERSION=2.0 -t cv9-report:v2 .
 
 이제 교안의 Server Report Dockerfile이 완성되었습니다. `ENTRYPOINT`와 `CMD`를 모두 JSON 배열 형태(exec form)로 명시했습니다. 베이스 이미지에서 상속한 CMD는 새 ENTRYPOINT 선언으로 초기화될 수 있으므로, 함께 사용할 CMD도 현재 Dockerfile에 명시합니다. 같은 Dockerfile에 직접 적은 CMD가 ENTRYPOINT보다 앞에 있다는 이유만으로 항상 무효가 되는 것은 아닙니다. [두 명령의 상호 작용](https://docs.docker.com/reference/dockerfile/#understand-how-cmd-and-entrypoint-interact)
 
-명령 18: 이미지에 저장된 기본값 확인 — 호스트 Bash
+명령 19: 이미지에 저장된 기본값 확인 — 호스트 Bash
 
 ```bash
 sudo docker image inspect cv9-report:v2 --format 'WORKDIR={{.Config.WorkingDir}} ENTRYPOINT={{json .Config.Entrypoint}} CMD={{json .Config.Cmd}}'
@@ -464,7 +464,7 @@ sudo docker image inspect cv9-report:v2 --format 'WORKDIR={{.Config.WorkingDir}}
 WORKDIR=/app ENTRYPOINT=["python","report.py"] CMD=["--limit","2"]
 ```
 
-명령 19: 기본 인자와 실행 시 인자 비교 — 호스트 Bash
+명령 20: 기본 인자와 실행 시 인자 비교 — 호스트 Bash
 
 ```bash
 sudo docker run --rm cv9-report:v2
@@ -479,9 +479,9 @@ sudo docker run --rm cv9-report:v2 --limit 3
 | 이미지 뒤에 인자 없음 | `python report.py --limit 2` | basic, 2개 |
 | 이미지 뒤에 `--limit 3` | `python report.py --limit 3` | basic, 3개 |
 
-명령 16에서는 CMD 전체를 교체하므로 `python report.py`까지 다시 썼습니다. 지금은 ENTRYPOINT에 실행 프로그램이 지정되어 있으므로 이미지 이름 뒤에 `--limit 3`만 전달합니다. 이 인자는 기존 CMD의 `--limit 2`를 대체한 다음 ENTRYPOINT 뒤에 붙습니다.
+명령 17에서는 CMD 전체를 교체하므로 `python report.py`까지 다시 썼습니다. 지금은 ENTRYPOINT에 실행 프로그램이 지정되어 있으므로 이미지 이름 뒤에 `--limit 3`만 전달합니다. 이 인자는 기존 CMD의 `--limit 2`를 대체한 다음 ENTRYPOINT 뒤에 붙습니다.
 
-명령 20: 기본 실행 프로그램을 잠시 바꾸기 — 호스트 Bash
+명령 21: 기본 실행 프로그램을 잠시 바꾸기 — 호스트 Bash
 
 ```bash
 sudo docker run --rm --entrypoint python cv9-report:v2 --version
@@ -507,7 +507,7 @@ Server Report는 실행하고 종료하는 프로그램이므로 포트가 필�
 
 그림 읽기: `EXPOSE 8080/tcp`는 이미지의 포트 정보이고, `-p 127.0.0.1:8081:8080`은 VM의 8081 포트를 컨테이너의 8080 포트에 게시합니다. 그림의 `127.0.0.1`은 SSH로 접속한 VM 자신이며 PC의 루프백 주소와 다릅니다. EXPOSE만으로 호스트 포트가 게시되지 않지만, EXPOSE가 통신을 차단하는 방화벽이라는 뜻은 아닙니다.
 
-명령 21: 웹 서버 이미지 작성 — 호스트 Bash
+명령 22: 웹 서버 이미지 작성 — 호스트 Bash
 
 ```bash
 cd "$HOME/week09-web"
@@ -527,7 +527,7 @@ EOF
 sudo docker build -t cv9-web:v1 .
 ```
 
-명령 22: EXPOSE만 있는 컨테이너 실행 — 호스트 Bash
+명령 23: EXPOSE만 있는 컨테이너 실행 — 호스트 Bash
 
 ```bash
 sudo docker image inspect cv9-web:v1 --format '{{json .Config.ExposedPorts}}'
@@ -545,7 +545,7 @@ sudo docker port cv9-web-unpublished
 
 이미지 설정에는 `{"8080/tcp":{}}`가 있지만 `docker port`에는 출력이 없습니다. `EXPOSE`만으로 호스트 포트가 게시되지 않았습니다. 이것이 컨테이너 IP로도 절대 통신할 수 없다는 뜻은 아닙니다. EXPOSE는 방화벽 규칙이 아닙니다.
 
-명령 23: 호스트 포트를 게시한 두 번째 컨테이너 실행 — 호스트 Bash
+명령 24: 호스트 포트를 게시한 두 번째 컨테이너 실행 — 호스트 Bash
 
 ```bash
 sudo docker run -d --name cv9-web-published -p 127.0.0.1:8081:8080 cv9-web:v1
@@ -573,7 +573,7 @@ EXPOSE는 TCP가 기본값이며 UDP는 `EXPOSE 53/udp`처럼 별도로 선언�
 
 앞에서 만든 `cv9-report:v1`에는 버전 1.0이, `cv9-report:v2`에는 버전 2.0이 들어 있습니다. 두 이미지에 `release`라는 이름표를 번갈아 붙여 비교합니다.
 
-명령 24: 버전 1.0으로 컨테이너 만들고 실행 — 호스트 Bash
+명령 25: 버전 1.0으로 컨테이너 만들고 실행 — 호스트 Bash
 
 `release`가 v1을 가리키게 한 뒤, `cv9-report-old`라는 컨테이너를 만들어 실행합니다.
 
@@ -587,7 +587,7 @@ sudo docker run --name cv9-report-old cv9-report:release
 
 출력에서 `version=1.0`을 확인합니다. `--rm`을 넣지 않았으므로 실행이 끝나도 컨테이너가 남습니다.
 
-명령 25: release 이름표를 버전 2.0으로 변경 — 호스트 Bash
+명령 26: release 이름표를 버전 2.0으로 변경 — 호스트 Bash
 
 ```bash
 sudo docker tag cv9-report:v2 cv9-report:release
@@ -595,7 +595,7 @@ sudo docker tag cv9-report:v2 cv9-report:release
 
 이제 `release`는 v2를 가리킵니다. 앞에서 만든 컨테이너는 아직 그대로입니다.
 
-명령 26: 기존 컨테이너와 새 컨테이너 비교 — 호스트 Bash
+명령 27: 기존 컨테이너와 새 컨테이너 비교 — 호스트 Bash
 
 기존 컨테이너를 다시 실행합니다. `start -a`는 남아 있는 컨테이너를 시작하고 출력을 보여 줍니다.
 
@@ -627,7 +627,7 @@ sudo docker run --rm cv9-report:release
 
 ### Docker Hub 저장소와 로그인 준비
 
-명령 27: 본인 계정과 공개 저장소 준비 — PC 웹 브라우저
+명령 28: 본인 계정과 공개 저장소 준비 — PC 웹 브라우저
 
 1. [Docker Hub](https://hub.docker.com/)에 본인의 Docker ID로 로그인합니다. VM 접속 계정과 Docker ID는 별개입니다.
 2. My Hub → Repositories에서 선택된 계정을 확인합니다. 주소의 `https://hub.docker.com/repositories/본인ID` 부분도 확인합니다. 아래 교수자 화면의 `choongheecho2`는 예시이며, 학생은 자신의 Docker ID를 사용합니다.
@@ -657,7 +657,7 @@ sudo docker run --rm cv9-report:release
 
 Public 저장소의 이미지는 다른 사람도 내려받을 수 있습니다. 이 실습에서 만든 예제 파일만 이미지에 포함했는지 확인합니다. SSH 비밀번호·로그인용 일회성 코드·Docker 토큰을 Dockerfile·보고서·공유용 스크린샷에 넣지 않습니다.
 
-명령 28: Docker ID 입력 — VM Bash
+명령 29: Docker ID 입력 — VM Bash
 
 아래 입력에는 본인의 Docker ID를 적습니다. 이메일 주소나 VM 사용자 이름을 자동으로 사용하지 않습니다.
 
@@ -673,7 +673,7 @@ printf '배포할 저장소: %s/server-report\n' "$HUB_USER"
 
 `$HUB_USER` 값을 이어서 사용할 수 있도록 같은 SSH 창에서 계속 진행합니다.
 
-명령 29: Docker Hub 로그인 — VM Bash
+명령 30: Docker Hub 로그인 — VM Bash
 
 ```bash
 sudo docker login
@@ -694,7 +694,7 @@ sudo docker login
 
 그림 읽기: `본인ID/server-report:v1`은 Namespace·저장소·태그를 합친 주소이며, 이 실습에서는 레지스트리 이름을 생략해 Docker Hub를 사용합니다. Namespace는 본인의 Docker ID로 바꾸고 저장소는 `server-report`, 태그는 `v1`·`v2`를 사용합니다. `docker tag`는 로컬 이미지에 이름을 추가하고, 실제 업로드는 `docker push`가 수행합니다.
 
-명령 30: 배포할 로컬 이미지 확인 — VM Bash
+명령 31: 배포할 로컬 이미지 확인 — VM Bash
 
 ```bash
 sudo docker image ls cv9-report
@@ -702,7 +702,7 @@ sudo docker image ls cv9-report
 
 `v1`과 `v2`가 모두 있어야 합니다. `v1`은 프로그램 버전 1.0, `v2`는 2.0을 담은 앞 단계의 이미지입니다.
 
-명령 31: Docker Hub 이름으로 태그 추가 — VM Bash
+명령 32: Docker Hub 이름으로 태그 추가 — VM Bash
 
 ```bash
 sudo docker tag cv9-report:v1 "$HUB_USER/server-report:v1"
@@ -722,7 +722,7 @@ Docker 29에서는 `IMAGE` 열에 `본인DockerID/server-report:v1`, `본인Dock
 
 `Docker ID/server-report:v1`은 `네임스페이스/저장소:태그`입니다. 레지스트리를 생략했으므로 Docker Hub를 사용합니다. `tag`는 기존 이미지를 가리키는 이름을 추가하며 새로 빌드하거나 업로드하지 않습니다. [이미지 태그](https://docs.docker.com/reference/cli/docker/image/tag/)
 
-명령 32: 태그 전후 이미지 ID 비교 — VM Bash
+명령 33: 태그 전후 이미지 ID 비교 — VM Bash
 
 ```bash
 sudo docker image inspect cv9-report:v1 "$HUB_USER/server-report:v1" --format '{{.Id}}'
@@ -734,7 +734,7 @@ sudo docker image inspect cv9-report:v2 "$HUB_USER/server-report:v2" --format '{
 
 각 블록에서 나온 두 ID는 서로 같아야 합니다. v1과 v2끼리 같은 ID여야 한다는 뜻은 아닙니다.
 
-명령 33: v1 업로드 — VM Bash
+명령 34: v1 업로드 — VM Bash
 
 ```bash
 sudo docker push "$HUB_USER/server-report:v1"
@@ -742,7 +742,7 @@ sudo docker push "$HUB_USER/server-report:v1"
 
 끝에 `digest: sha256:...`가 나오고 명령이 성공해야 합니다. `Layer already exists`는 같은 레이어가 이미 레지스트리에 있다는 뜻이며 정상 결과입니다.
 
-명령 34: v2 업로드와 웹 화면 확인 — VM Bash·PC 웹 브라우저
+명령 35: v2 업로드와 웹 화면 확인 — VM Bash·PC 웹 브라우저
 
 ```bash
 sudo docker push "$HUB_USER/server-report:v2"
@@ -761,11 +761,11 @@ Docker Hub의 본인 `server-report` 저장소에서 `v1`, `v2` 태그를 확인
 
 ### 태그와 digest 구분
 
-명령 35: push 결과와 Docker Hub의 이미지·다이제스트 비교 — VM Bash·PC 웹 브라우저
+명령 36: push 결과와 Docker Hub의 이미지·다이제스트 비교 — VM Bash·PC 웹 브라우저
 
 추가 명령 없이 앞에서 실행한 `docker push`의 결과와 Docker Hub 화면을 비교합니다.
 
-1. 명령 33·34의 push 완료 출력에서 v1과 v2 각각의 `digest: sha256:...` 값을 확인합니다.
+1. 명령 34·35의 push 완료 출력에서 v1과 v2 각각의 `digest: sha256:...` 값을 확인합니다.
 2. Docker Hub에서 본인의 `server-report` 저장소 → Tags를 열고, `v1`과 `v2`가 모두 올라왔는지 확인합니다.
 3. 각 태그의 상세 화면에서 전체 다이제스트를 확인해 해당 버전의 push 출력과 비교합니다. 같은 종류의 다이제스트끼리 비교했을 때 값이 같으면, push한 이미지가 Hub에 동일하게 등록된 것입니다.
 
@@ -776,7 +776,7 @@ Docker Hub의 본인 `server-report` 저장소에서 `v1`, `v2` 태그를 확인
 
 push 결과가 Index Digest라면 Hub의 Index Digest와 비교합니다. 플랫폼별 상세 화면의 Manifest Digest와는 값이 다를 수 있습니다. 단일 플랫폼 이미지라도 빌드 증명 정보가 함께 포함되면 Index가 만들어질 수 있습니다. [Index와 빌드 증명 정보](https://docs.docker.com/build/metadata/attestations/attestation-storage/)
 
-명령 36: Docker Hub 로그아웃 — VM Bash
+명령 37: Docker Hub 로그아웃 — VM Bash
 
 업로드를 마쳤으면 VM에서 로그아웃합니다.
 
@@ -817,7 +817,7 @@ Docker Hub에 올린 이미지와 VM의 이미지는 삭제되지 않습니다.
 
    위 세 기능의 조합은 이번 PC에서 확인한 해결 사례입니다. Windows 하이퍼바이저 플랫폼을 모든 WSL 2 환경의 필수 조건으로 일반화하지 않습니다. Microsoft의 [수동 WSL 설치 안내](https://learn.microsoft.com/en-us/windows/wsl/install-manual)는 WSL 선택 기능, 가상 머신 플랫폼과 재부팅 절차를 설명합니다. 문제가 계속되면 [WSL 문제 해결 안내](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting)에 따라 가상화 지원과 설정을 함께 점검합니다.
 
-6. Docker Desktop 하단의 Engine running을 확인합니다. 다음 명령 37에서 Client·Server와 Linux 플랫폼까지 확인한 뒤 아래 설치 점검용 컨테이너를 실행합니다.
+6. Docker Desktop 하단의 Engine running을 확인합니다. 다음 명령 38에서 Client·Server와 Linux 플랫폼까지 확인한 뒤 아래 설치 점검용 컨테이너를 실행합니다.
 
    ![재부팅 후 Docker Desktop의 Engine running 상태](images/docker-install/06-engine-running.png)
 
@@ -829,7 +829,7 @@ Docker Hub에 올린 이미지와 VM의 이미지는 삭제되지 않습니다.
 
 </details>
 
-명령 37: 실행 컴퓨터와 Linux 엔진 확인 — Windows PowerShell
+명령 38: 실행 컴퓨터와 Linux 엔진 확인 — Windows PowerShell
 
 PC에 Docker Desktop을 설치하고 시작합니다. 설치가 필요하면 [Windows 설치 안내](https://docs.docker.com/desktop/setup/install/windows-install/)에 따라 준비하며, 설치·재부팅 시간은 실습 시간과 별도로 잡습니다. Linux 컨테이너 모드를 사용합니다. SSH 창을 그대로 두고 새 PowerShell 창을 엽니다.
 
@@ -843,7 +843,7 @@ docker context ls
 docker version
 ```
 
-명령 38: 같은 Docker Hub 저장소 선택 — Windows PowerShell
+명령 39: 같은 Docker Hub 저장소 선택 — Windows PowerShell
 
 ```powershell
 $HubUser = Read-Host 'VM에서 사용한 본인의 Docker ID'
@@ -865,7 +865,7 @@ docker login --username $HubUser
 `Password:`에 PAT를 입력합니다. 토큰을 명령줄 인자로 적지 않습니다. Docker Desktop은 운영체제의 자격 증명 저장소를 사용합니다. 이 단계는 평소 Docker Desktop 로그인 계정에 영향을 주므로 본인의 PC에서 본인 계정으로 진행합니다.
 </details>
 
-명령 39: v1 다운로드와 기본 실행 — Windows PowerShell
+명령 40: v1 다운로드와 기본 실행 — Windows PowerShell
 
 ```powershell
 docker pull "${HubUser}/server-report:v1"
@@ -885,7 +885,7 @@ docker run --rm "${HubUser}/server-report:v1"
 
 VM에서 빌드한 프로그램 버전 1.0의 기본 모드·기본 개수 결과를 확인합니다. Windows에 Python이나 예제 CSV를 별도로 설치·복사하지 않았다는 점을 기록합니다. 실행에 필요한 사용자 공간 파일이 이미지에 있기 때문입니다.
 
-명령 40: v2 다운로드와 실행 조건 변경 — Windows PowerShell
+명령 41: v2 다운로드와 실행 조건 변경 — Windows PowerShell
 
 ```powershell
 docker pull "${HubUser}/server-report:v2"
@@ -901,7 +901,7 @@ docker run --rm -e REPORT_MODE=detail "${HubUser}/server-report:v2" --limit 3
 
 보고서에 필요한 실행 결과를 먼저 정리합니다. 이번 문서에서 만든 정확한 이름만 정리합니다. 기존 7·8주차 자원, 공용 베이스 이미지, 빌드 캐시는 지우지 않습니다. `docker system prune`이나 모든 컨테이너를 한꺼번에 삭제하는 명령을 사용하지 않습니다.
 
-명령 41: 9주차 컨테이너 정리 — 호스트 Bash
+명령 42: 9주차 컨테이너 정리 — 호스트 Bash
 
 ```bash
 sudo docker stop cv9-web-unpublished cv9-web-published
@@ -913,7 +913,7 @@ sudo docker rm cv9-web-unpublished cv9-web-published cv9-report-old
 
 실시하지 않은 단계의 이름에 `No such container`가 나오면 해당 정리만 건너뜁니다. 다른 이름의 자원을 대신 삭제하지 않습니다.
 
-명령 42: 실습 이미지 이름 정리 — 호스트 Bash
+명령 43: 실습 이미지 이름 정리 — 호스트 Bash
 
 Task 4를 진행했다면 Hub용 로컬 이름을 정리합니다. Docker Hub 서버의 이미지를 삭제하는 명령은 아닙니다.
 
@@ -929,7 +929,7 @@ sudo docker image rm cv9-report:no-workdir cv9-report:workdir cv9-report:cmd-v1 
 
 사용 중이라는 메시지가 나오면 `sudo docker ps -a`로 해당 이미지의 컨테이너를 확인합니다. 강제 삭제하지 않습니다. `~/week09-report`, `~/week09-web` 소스는 복습용으로 남겨 둡니다.
 
-명령 43: Windows 실습 이미지 정리 — Windows PowerShell
+명령 44: Windows 실습 이미지 정리 — Windows PowerShell
 
 Task 4를 진행한 PC에서만 실행합니다. 다른 실행 중인 컨테이너가 이미지를 사용한다면 먼저 해당 컨테이너의 용도를 확인합니다.
 
@@ -946,7 +946,7 @@ Hub 저장소는 제출·공유를 위해 남겨 둡니다. 실습용 PAT가 더
 | `docker: command not found` 또는 Server 연결 실패 | 명령 01의 설치 안내 확인. Docker CE와 Ubuntu docker.io 패키지를 혼합하지 않음 |
 | Docker 소켓 `permission denied` | VM에서 `sudo docker`를 사용했는지 확인. Windows에는 sudo를 붙이지 않음 |
 | 빌드에서 `report.py` 또는 `servers.csv` 없음 | `pwd`, `ls -la`로 `~/week09-report`인지 확인. 마지막 빌드 컨텍스트 `.`와 .dockerignore 확인 |
-| `FileNotFoundError: servers.csv` | 명령 08 첫 실행은 의도한 오류. 이후 단계에서는 WORKDIR가 `/app`인지 확인 |
+| `FileNotFoundError: servers.csv` | 명령 09 첫 실행은 의도한 오류. 이후 단계에서는 WORKDIR가 `/app`인지 확인 |
 | heredoc 뒤에 `>` 프롬프트가 계속됨 | `Ctrl+C` 후 마지막 EOF까지 전체 복사. EOF 줄 앞뒤 공백 확인 |
 | 이미지 뒤 `--limit`을 실행 파일로 찾음 | CMD만 있는 `:cmd-v2`와 ENTRYPOINT가 있는 `:v2`를 혼동했는지 확인 |
 | `report.py: error: unrecognized arguments: python report.py` | ENTRYPOINT가 있는 이미지 뒤에는 `--limit 3`만 전달. 프로그램 이름을 반복하지 않음 |
@@ -959,7 +959,7 @@ Hub 저장소는 제출·공유를 위해 남겨 둡니다. 실습용 PAT가 더
 | `pull access denied` / `manifest unknown` | Hub에 push 완료되었는지, Public 여부와 태그 철자 확인. tag 명령만으로 업로드되지 않음 |
 | Hub 다운로드 제한·네트워크 시간 초과 | 본인 계정 로그인 후 재시도하거나 잠시 뒤 재시도. 학교 네트워크 문제는 교수자에게 확인하며 daemon 설정을 통째로 덮어쓰지 않음 |
 | Windows `docker` 없음 / 엔진 연결 실패 | Docker Desktop 설치·실행 상태 확인. PowerShell을 새로 열고 Client·Server 확인 |
-| `dockerDesktopLinuxEngine` / `The system cannot find the file specified` | Docker Desktop 실행 후 `Engine running`까지 기다림. `docker version`에 Client·Server가 모두 나오면 pull 재시도. 계속 실패하면 명령 37의 context와 Linux 엔진 상태 확인 |
+| `dockerDesktopLinuxEngine` / `The system cannot find the file specified` | Docker Desktop 실행 후 `Engine running`까지 기다림. `docker version`에 Client·Server가 모두 나오면 pull 재시도. 계속 실패하면 명령 38의 context와 Linux 엔진 상태 확인 |
 | 첫 실행에서 WSL `ERROR_NOT_SUPPORTED` | 위 설치 안내의 실제 해결 사례 확인. CPU 가상화, WSL·가상 머신 플랫폼과 재부팅 여부를 점검. 이 PC는 Windows 하이퍼바이저 플랫폼을 포함한 세 기능 활성화 후 정상화 |
 | Windows에서 `windows/amd64`, 플랫폼 불일치 | Linux 컨테이너 모드와 CPU 플랫폼을 확인. 단일 플랫폼 이미지를 모든 CPU에서 그대로 실행할 수 있는 것은 아님 |
 | 새 태그를 받았는데 기존 컨테이너는 이전 버전 | 정상 동작. restart는 이미지 교체가 아니므로 새 이미지로 컨테이너 생성 |
