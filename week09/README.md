@@ -31,16 +31,6 @@
 명령 01: Docker와 Buildx 확인 — 호스트 Bash
 
 ```bash
-if systemctl is-active --quiet docker; then
-  echo "Docker 실행 중"
-else
-  sudo systemctl start docker && echo "Docker 시작 완료"
-fi
-```
-
-Docker가 실행 중이면 메시지를 표시하고, 중지되어 있으면 시작합니다. 오류가 나오면 아래 설치 안내를 확인한 뒤 진행합니다.
-
-```bash
 sudo docker version
 ```
 
@@ -69,6 +59,16 @@ sudo systemctl start docker
 
 설치 후 명령 01을 다시 확인합니다. Docker가 이미 정상이라면 서비스를 재시작할 필요가 없습니다.
 </details>
+
+```bash
+if systemctl is-active --quiet docker; then
+  echo "Docker 실행 중"
+else
+  sudo systemctl start docker && echo "Docker 시작 완료"
+fi
+```
+
+Docker가 실행 중이면 메시지를 표시하고, 중지되어 있으면 시작합니다. 오류가 나오면 위 설치 안내를 확인한 뒤 진행합니다.
 
 명령 02: 이미지와 통신 도구 준비 — 호스트 Bash
 
