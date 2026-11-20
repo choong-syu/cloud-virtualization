@@ -2,7 +2,7 @@
 
 [전체 주차 목록](../README.md) · [9주차 실습](../week09/README.md)
 
-9주차에는 새 버전을 적용하려면 컨테이너를 새로 만들어야 한다는 것을 확인했습니다. 그런데 컨테이너를 지우면 그 안의 데이터도 함께 사라집니다. 이번 주에는 **데이터를 컨테이너 밖에 보관하는 방법**과 **컨테이너끼리 이름으로 통신하는 방법**을 익힙니다.
+9주차에는 새 버전을 적용하려면 컨테이너를 새로 만들어야 한다는 것을 확인했습니다. 그런데 컨테이너를 지우면 쓰기 레이어에 저장한 데이터도 함께 사라집니다. 이번 주에는 **데이터를 컨테이너 밖에 보관하는 방법**과 **컨테이너끼리 이름으로 통신하는 방법**을 익힙니다.
 
 학습 목표: 볼륨과 Bind Mount로 데이터를 보존하고, 사용자 정의 네트워크에서 컨테이너 이름으로 통신하는 방문자 카운터(web + redis-db)를 완성합니다.
 
@@ -19,14 +19,14 @@
 
 ## 실습 전체 흐름
 
-![10주차 실습 전체 흐름: 데이터 영속성 실습 4개와 네트워크 실습 2개를 거쳐 web과 redis-db로 구성한 방문자 카운터 완성](images/00-overview.svg)
+![10주차 실습 전체 흐름: 데이터 영속성 실습 4개와 네트워크 실습 2개를 거쳐 web과 redis-db로 구성한 방문자 카운터 완성](images/00-overview.png)
 
 그림 읽기: Task 1~4는 **데이터를 어디에 저장하는가**, Task 5~6은 **컨테이너가 서로를 어떻게 찾는가**를 다룹니다. Task 7에서 두 내용을 합쳐 방문자 카운터를 완성합니다.
 
 | 구간 | 확인할 질문 | 예상 시간 |
 | --- | --- | ---: |
-| 준비 | Docker와 이미지가 준비되었는가? | 5분 |
-| Task 1 | 볼륨 없이 실행한 Redis를 지우면 데이터는? | 10분 |
+| 준비 | Docker·이미지·포트·MTU가 준비되었는가? | 10분 |
+| Task 1 | 볼륨 옵션 없이 실행한 Redis를 다시 만들면? | 10분 |
 | Task 2 | 컨테이너를 새로 만들어도 데이터를 이어 쓸 수 있는가? | 10분 |
 | Task 3 | 호스트에서 고친 파일이 바로 반영되는가? | 10분 |
 | Task 4 | 강제 종료하면 데이터가 사라질 수 있는가? | 10분 |
@@ -75,26 +75,65 @@ sudo docker pull python:3.12-slim
 
 `redis`는 데이터 저장소, `nginx`는 웹 서버, `busybox`는 네트워크 확인용 도구, `python`은 방문자 카운터를 만들 때 사용합니다.
 
-명령 03: 포트 확인과 작업 폴더 준비
+명령 03: 포트·MTU 확인과 작업 폴더 준비
 
 이번 실습은 VM의 8080~8083번 포트를 사용합니다.
+
+```bash
+sudo docker ps --format '{{.Names}}  {{.Ports}}'
+```
+
+7주차의 `cv7-web`은 8080, 9주차의 `cv9-web-published`는 8081을 사용할 수 있습니다. 다음 명령은 두 컨테이너 중 실행 중인 것만 중지합니다.
+
+```bash
+for name in cv7-web cv9-web-published; do
+  if [ "$(sudo docker inspect --format '{{.State.Running}}' "$name" 2>/dev/null)" = "true" ]; then
+    sudo docker stop "$name"
+  fi
+done
+```
 
 ```bash
 sudo ss -ltn | grep -E ':(8080|8081|8082|8083)\b' || echo "8080~8083 사용 가능"
 ```
 
-`8080~8083 사용 가능`이 나오면 됩니다. 7주차의 `cv7-web`이 남아 8080을 쓰고 있다면 `sudo docker stop cv7-web`으로 중지합니다.
+`8080~8083 사용 가능`이 나오면 다음으로 진행합니다. 다른 컨테이너가 포트를 사용한다면 목록에서 이름을 확인한 뒤 `sudo docker stop 컨테이너이름`으로 중지합니다.
+
+8주차에서 설정한 Docker 기본 브리지(`docker0`)의 MTU도 확인합니다. 수업 VM에 맞춰 `1442`로 설정하면 이미지 빌드 중 패키지를 안정적으로 내려받을 수 있습니다.
+
+```bash
+ip -o link show ens3
+ip -o link show docker0
+```
+
+두 출력의 `mtu`가 모두 `1442`이면 됩니다. 아래 명령은 Docker의 MTU가 다를 때만 기존 설정에 `mtu` 값을 반영하고 Docker를 재시작합니다. Docker 재시작 시 실행 중인 컨테이너가 중지될 수 있으므로 실습 컨테이너를 만들기 전에 실행합니다.
+
+```bash
+if [ "$(cat /sys/class/net/docker0/mtu)" != "1442" ]; then
+  sudo python3 - <<'PY'
+import json
+from pathlib import Path
+path = Path('/etc/docker/daemon.json')
+config = json.loads(path.read_text()) if path.exists() else {}
+config['mtu'] = 1442
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps(config, indent=2) + '\n')
+PY
+  sudo systemctl restart docker
+fi
+ip -o link show docker0
+```
 
 ```bash
 mkdir -p ~/week10/html ~/week10/web
 cd ~/week10
 ```
 
-## Task 1. 볼륨 없이 실행하면 데이터는 어디로 갈까?
+## Task 1. 볼륨 옵션 없이 실행하면 데이터는 어디로 갈까?
 
 교안 연결: 「컨테이너 쓰기 레이어는 일시적이다」, 「이름 있는 볼륨과 익명 볼륨」
 
-![익명 볼륨: -v 없이 실행해도 VOLUME 선언으로 64자리 이름의 볼륨이 생기지만 새 컨테이너는 새 볼륨을 받아 이전 데이터를 찾지 못함](images/01-anonymous-volume.svg)
+![익명 볼륨: -v 없이 실행해도 VOLUME 선언으로 64자리 이름의 볼륨이 생기지만 새 컨테이너는 새 볼륨을 받아 이전 데이터를 찾지 못함](images/01-anonymous-volume.png)
 
 그림 읽기: Redis 이미지에는 `VOLUME /data`가 선언되어 있어서, `-v`를 쓰지 않아도 **이름 없는 볼륨(익명 볼륨)**이 자동으로 붙습니다. 하지만 컨테이너를 다시 만들면 **새** 익명 볼륨이 붙기 때문에 이전 데이터를 찾지 못합니다.
 
@@ -127,11 +166,14 @@ echo "$ANON1"
 
 64자리의 긴 이름이 출력됩니다. 이름만 보고는 무슨 데이터인지 알 수 없습니다.
 
-명령 06: 컨테이너를 지우고 다시 만들어 데이터 확인
+명령 06: 정상 종료한 뒤 컨테이너를 다시 만들어 데이터 확인
 
 ```bash
-sudo docker rm -f cv10-tmp
+sudo docker stop cv10-tmp
+sudo docker rm cv10-tmp
 ```
+
+정상 종료하면 Redis가 `note=hello`를 기존 익명 볼륨의 파일에 저장합니다. 이제 같은 이름으로 새 컨테이너를 만듭니다.
 
 ```bash
 sudo docker run -d --name cv10-tmp redis:7.4-alpine
@@ -167,7 +209,7 @@ sudo docker volume rm "$ANON1"
 
 교안 연결: 「마운트」, 「Named Volume」, 「-v와 --mount」
 
-![Named Volume: cv10-redis-data를 컨테이너 A의 /data에 연결해 기록한 뒤 A를 삭제하고 컨테이너 B에 같은 볼륨을 연결해 데이터를 이어서 사용](images/02-named-volume.svg)
+![Named Volume: cv10-redis-data를 컨테이너 A의 /data에 연결해 기록한 뒤 A를 삭제하고 컨테이너 B에 같은 볼륨을 연결해 데이터를 이어서 사용](images/02-named-volume.png)
 
 그림 읽기: 컨테이너의 `/data`에 쓴 내용은 호스트의 볼륨 폴더에 저장됩니다. 컨테이너 A를 지워도 볼륨은 남고, 새 컨테이너 B에 같은 볼륨을 연결하면 데이터를 이어서 쓸 수 있습니다.
 
@@ -240,13 +282,13 @@ sudo docker rm -f cv10-redis-b
 sudo docker volume rm cv10-redis-data
 ```
 
-볼륨은 `docker volume rm`으로 **직접 지워야만** 사라집니다.
+Named Volume은 컨테이너 삭제만으로는 사라지지 않습니다. 여기서는 `docker volume rm`으로 볼륨까지 정리합니다.
 
 ## Task 3. Bind Mount: 호스트 폴더를 그대로 연결
 
 교안 연결: 「Bind Mount」, 「빈 Named Volume과 Bind Mount의 차이」
 
-![같은 /usr/share/nginx/html 경로에 Bind Mount를 연결하면 호스트 파일이 이미지 파일을 가리고, 빈 Named Volume을 연결하면 이미지의 파일이 볼륨으로 복사되어 보임](images/03-bind-vs-volume.svg)
+![같은 /usr/share/nginx/html 경로에 Bind Mount를 연결하면 호스트 파일이 이미지 파일을 가리고, 빈 Named Volume을 연결하면 이미지의 파일이 볼륨으로 복사되어 보임](images/03-bind-vs-volume.png)
 
 그림 읽기: Bind Mount는 호스트 폴더를 그대로 보여 주므로, 이미지에 원래 있던 파일은 가려집니다. 반대로 **빈** Named Volume을 연결하면 이미지에 있던 파일이 볼륨으로 복사되어 보입니다.
 
@@ -322,14 +364,16 @@ sudo docker volume rm cv10-html-vol
 
 교안 연결: 「볼륨은 공간을 제공하고, 기록 시점은 애플리케이션이 결정한다」, 「정상 종료와 강제 종료」
 
-![docker stop은 Redis가 RDB를 저장할 시간을 주고, docker kill은 즉시 종료하여 마지막 저장 이후 변경분이 손실되지만 AOF는 명령마다 파일에 기록해 유지](images/04-rdb-aof.svg)
+![RDB는 마지막 스냅샷을, AOF는 기록한 쓰기 명령을 이용해 복구하며 기본 everysec 설정은 OS 장애 시 최근 약 1초의 변경분을 잃을 수 있음](images/04-rdb-aof.png)
 
 그림 읽기: Redis는 데이터를 메모리에서 처리하고, 정해진 때에만 디스크에 저장합니다. 볼륨은 저장할 **공간**일 뿐이고, **언제 저장할지**는 Redis 설정이 정합니다.
 
 | 방식 | 언제 저장하나? | 강제 종료(`docker kill`)하면 |
 | --- | --- | --- |
 | RDB (기본값) | 조건을 만족할 때, 정상 종료할 때 | 마지막 저장 이후 변경분 손실 |
-| AOF (`--appendonly yes`) | 쓰기 명령이 올 때마다 파일에 추가 | 유지 |
+| AOF (`--appendonly yes`) | 쓰기 명령을 파일에 추가, 기본 `everysec`은 약 1초마다 디스크 동기화 | 이번 실습에서는 기록된 값으로 복구 |
+
+`docker kill`은 Redis 프로세스를 종료합니다. VM 전체나 OS가 중단되는 장애와는 다르며, AOF의 기본 `everysec` 설정에서는 그런 장애 시 최근 약 1초의 변경분이 손실될 수 있습니다.
 
 명령 15: RDB(기본값) — 정상 종료와 강제 종료 비교
 
@@ -388,7 +432,7 @@ sudo docker start cv10-aof
 sudo docker exec cv10-aof redis-cli get hits
 ```
 
-예상 출력: `3` — 강제 종료했지만 값이 유지되었습니다.
+예상 출력: `3` — 이번 실험에서는 AOF에 기록된 값을 읽어 복구했습니다.
 
 명령 17: Task 4 정리
 
@@ -397,7 +441,7 @@ sudo docker rm -f cv10-rdb cv10-aof
 sudo docker volume rm cv10-rdb-data cv10-aof-data
 ```
 
-> 정리: 컨테이너 **삭제**에 대비하는 것은 볼륨, 갑작스러운 **종료**에 대비하는 것은 Redis의 AOF 설정입니다.
+> 정리: 볼륨은 컨테이너 **삭제 후에도 저장 공간을 유지**하고, Redis의 기록 설정은 **종료 후 복구할 수 있는 데이터의 범위**를 정합니다.
 >
 > 참고: RDB로 쓰던 볼륨에 나중에 AOF를 켜면 기존 값이 보이지 않을 수 있습니다. 그래서 이 실습은 RDB용과 AOF용 볼륨을 따로 사용합니다.
 
@@ -405,7 +449,7 @@ sudo docker volume rm cv10-rdb-data cv10-aof-data
 
 교안 연결: 「Network Namespace · veth · Linux Bridge」, 「docker0 브리지」, 「포트 게시(-p)는 NAT 규칙으로 동작한다」
 
-![Docker 기본 네트워크: 컨테이너의 eth0와 호스트의 veth가 한 쌍으로 docker0 브리지에 연결되고, 호스트 8082번으로 들어온 요청이 DNAT 규칙으로 컨테이너 IP의 80번으로 전달됨](images/05-docker0-nat.svg)
+![Docker 기본 네트워크: 컨테이너의 eth0와 호스트의 veth가 한 쌍으로 docker0 브리지에 연결되고, 호스트 8082번으로 들어온 요청이 DNAT 규칙으로 컨테이너 IP의 80번으로 전달됨](images/05-docker0-nat.png)
 
 그림 읽기: 5주차에 `ip` 명령으로 직접 만들었던 **veth(가상 케이블)**와 **브리지(가상 스위치)**를 Docker가 자동으로 만듭니다. 컨테이너의 `eth0`는 케이블의 한쪽 끝이고, 다른 끝은 호스트의 `docker0` 스위치에 꽂혀 있습니다. `-p 8082:80`은 "호스트 8082번으로 온 요청을 컨테이너 80번으로 보내라"는 규칙(NAT)을 만듭니다.
 
@@ -468,7 +512,7 @@ sudo docker rm -f cv10-bind
 
 교안 연결: 「컨테이너 IP는 고정되어 있지 않다」, 「Docker 내장 DNS」, 「기본 bridge와 사용자 정의 bridge 비교」
 
-![기본 bridge(docker0)에서는 redis-db 이름을 찾지 못하지만, 사용자 정의 네트워크 cv10-net에서는 127.0.0.11의 내장 DNS가 redis-db를 현재 IP로 알려 줌](images/06-user-network-dns.svg)
+![사용자 정의 네트워크에서 busybox가 내장 DNS에 redis-db의 이름을 질의하고 현재 IP로 접속하며, IP가 바뀌어도 이름은 유지됨](images/06-user-network-dns.png)
 
 그림 읽기: 컨테이너 IP는 다시 만들 때마다 바뀔 수 있어서 코드에 IP를 적으면 안 됩니다. 직접 만든 네트워크(사용자 정의 네트워크)에서는 Docker의 **내장 DNS**가 컨테이너 이름을 현재 IP로 알려 줍니다. 기본 네트워크(`docker0`)에서는 이름으로 찾을 수 없습니다.
 
@@ -490,7 +534,7 @@ ip -br link show type bridge
 sudo docker run -d --rm --name redis-db --network cv10-net redis:7.4-alpine
 ```
 
-`--rm`은 컨테이너가 삭제될 때 익명 볼륨도 함께 지우는 옵션입니다.
+`--rm`은 컨테이너가 종료되면 컨테이너와 익명 볼륨을 자동 정리하는 옵션입니다. 아래에서 직접 강제 삭제할 때는 `rm -f -v`로 익명 볼륨까지 함께 정리합니다.
 
 명령 24: 기본 네트워크와 cv10-net에서 이름으로 찾기
 
@@ -528,7 +572,7 @@ sudo docker run --rm --network cv10-net busybox:1.36 cat /etc/resolv.conf
 `redis-db`를 지우고, 다른 컨테이너가 먼저 IP를 받게 한 뒤 `redis-db`를 다시 만듭니다.
 
 ```bash
-sudo docker rm -f redis-db
+sudo docker rm -f -v redis-db
 ```
 
 ```bash
@@ -548,7 +592,7 @@ sudo docker run --rm --network cv10-net busybox:1.36 ping -c 1 redis-db
 명령 26: Task 6 정리
 
 ```bash
-sudo docker rm -f redis-db cv10-other
+sudo docker rm -f -v redis-db cv10-other
 sudo docker network rm cv10-net
 ```
 
@@ -558,7 +602,7 @@ sudo docker network rm cv10-net
 
 교안 연결: 「서비스 단위의 분리」, 「Stateless와 Stateful」, 「최소 노출 원칙」, 「설정과 코드의 분리」, 「전체 구성을 명령어로 실행하기」
 
-![방문자 카운터 구성: 호스트 8080번만 web 컨테이너의 5000번에 게시하고, web은 cv10-net에서 redis-db라는 이름으로 6379번에 접속하며, redis-db의 /data는 cv10-redis-data 볼륨에 연결](images/07-visitor-counter.svg)
+![방문자 카운터 구성: 호스트 8080번만 web 컨테이너의 5000번에 게시하고, web은 cv10-net에서 redis-db라는 이름으로 6379번에 접속하며, redis-db의 /data는 cv10-redis-data 볼륨에 연결](images/07-visitor-counter.png)
 
 그림 읽기: 외부에서는 `web`(8080)에만 접속합니다. `web`은 같은 네트워크의 `redis-db`에 **이름으로** 접속해 방문 수를 1씩 올립니다. `web`은 데이터를 갖지 않는 **Stateless**, `redis-db`는 데이터를 볼륨에 보관하는 **Stateful** 컨테이너입니다.
 
@@ -628,7 +672,7 @@ sudo docker run -d --name redis-db --network cv10-net \
   redis:7.4-alpine redis-server --appendonly yes
 ```
 
-`redis-db`에는 `-p`를 쓰지 않았습니다. 외부에 열지 않고 같은 네트워크의 web만 접속하게 합니다(최소 노출 원칙).
+`redis-db`에는 `-p`를 쓰지 않아 호스트 포트로 게시하지 않았습니다. `web`을 비롯해 같은 네트워크에 연결된 컨테이너는 `redis-db:6379`로 접속할 수 있습니다. 외부에 필요한 web 포트만 게시하는 구성입니다(최소 노출 원칙).
 
 명령 30: 실수 체험 — `-e`를 빠뜨리고 web 실행
 
@@ -667,14 +711,14 @@ curl http://localhost:8080
 | --- | --- |
 | `--network cv10-net` | 이름으로 통신 |
 | `-v cv10-redis-data:/data` | 데이터는 볼륨에 보존 |
-| `--appendonly yes` | 강제 종료에도 데이터 유지 |
+| `--appendonly yes` | 쓰기 명령을 AOF에 기록해 재시작 시 복구 |
 | `-e REDIS_HOST=redis-db` | 접속 대상은 실행할 때 지정 |
 | `-p 8080:5000` | web만 외부에 공개 |
 
 명령 32: 외부에 열린 포트 확인
 
 ```bash
-sudo docker ps --filter name=web --filter name=redis-db --format '{{.Names}}  {{.Ports}}'
+sudo docker ps --filter 'name=^/(web|redis-db)$' --format '{{.Names}}  {{.Ports}}'
 ```
 
 예상 출력:
@@ -728,13 +772,13 @@ sudo docker start redis-db
 curl http://localhost:8080
 ```
 
-예상 출력: `방문 횟수: 6` — AOF 설정 덕분에 강제 종료 후에도 값이 유지되었습니다. `curl`이 실패하면 Redis가 시작되는 중이므로 잠시 후 다시 실행합니다.
+예상 출력: `방문 횟수: 6` — 이번 실험에서는 AOF에 기록된 값을 복구해 이어서 증가했습니다. `curl`이 실패하면 Redis가 시작되는 중이므로 잠시 후 다시 실행합니다.
 
 | 실험 | 결과 | 이유 |
 | --- | --- | --- |
 | web 교체 | 이어서 증가 | web은 Stateless |
 | redis-db 교체 | 이어서 증가 | 데이터는 Named Volume에 있음 |
-| redis-db 강제 종료 | 이어서 증가 | AOF가 매 변경을 기록 |
+| redis-db 강제 종료 | 이번 실험에서 이어서 증가 | AOF에 기록된 값을 복구 |
 
 이번 구성은 순서를 지켜야 하고 옵션이 길어 실수하기 쉽습니다. 11주차에는 같은 구성을 파일 하나(`compose.yaml`)로 정의하는 Docker Compose를 배웁니다.
 
@@ -778,18 +822,18 @@ sudo docker image rm cv10-web:v1
 
 | 증상 | 해결 |
 | --- | --- |
-| `port is already allocated` | 명령 03으로 포트 확인. 7주차 `cv7-web`이면 `sudo docker stop cv7-web` |
+| `port is already allocated` | 명령 03에서 점유 컨테이너 확인. `cv7-web`은 8080, `cv9-web-published`는 8081을 사용할 수 있음 |
 | `container name ... is already in use` | 이전 실행이 남은 것. `sudo docker rm -f 이름` 후 다시 실행 |
 | `volume is in use` | 그 볼륨을 쓰는 컨테이너를 먼저 삭제 |
 | `curl`에 `Connection refused` | 컨테이너가 시작 중. 잠시 후 다시 실행 |
 | `curl`에 `500` | `-e REDIS_HOST=redis-db`를 넣었는지, redis-db가 실행 중인지 확인 |
 | `ping: bad address 'redis-db'` | `--network cv10-net`을 넣었는지 확인 (명령 24 첫 실행은 정상) |
-| 빌드 중 `pip install`이 멈춤 | 8주차 MTU 설정(`cat /etc/docker/daemon.json`) 확인 후 다시 빌드 |
+| 빌드 중 `pip install`이 멈춤 | 명령 03의 MTU 설정 확인. `docker0`의 MTU가 `1442`인지 확인한 뒤 다시 빌드 |
 | heredoc 뒤 `>`가 계속 나옴 | `Ctrl+C` 후 마지막 `EOF`까지 다시 복사 |
 
 ## 이론과 다음 주차 연결
 
-컨테이너를 지우면 그 안의 데이터도 사라지므로, 보존할 데이터는 **볼륨**에 둡니다. 볼륨은 공간만 제공하고, 언제 저장할지는 애플리케이션 설정(RDB·AOF)이 정합니다. Docker 네트워크는 5주차의 veth와 브리지로 만들어지고, `-p`는 NAT 규칙으로 동작합니다. 컨테이너 IP는 바뀔 수 있으므로 사용자 정의 네트워크에서 **이름**으로 통신합니다.
+컨테이너를 지우면 쓰기 레이어의 데이터도 사라지므로, 보존할 데이터는 **볼륨**에 둡니다. 볼륨은 공간만 제공하고, 언제 저장할지는 애플리케이션 설정(RDB·AOF)이 정합니다. Docker 네트워크는 5주차의 veth와 브리지로 만들어지고, `-p`는 NAT 규칙으로 동작합니다. 컨테이너 IP는 바뀔 수 있으므로 사용자 정의 네트워크에서 **이름**으로 통신합니다.
 
 11주차에는 이번에 하나씩 입력한 명령들을 `compose.yaml` 하나로 정의하는 Docker Compose를 배웁니다.
 
@@ -800,4 +844,4 @@ sudo docker image rm cv10-web:v1
 - 네트워크: [Bridge network driver](https://docs.docker.com/engine/network/drivers/bridge/), [Packet filtering and firewalls](https://docs.docker.com/engine/network/packet-filtering-firewalls/)
 - Redis: [Redis persistence](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/)
 
-개념 그림은 실습 흐름을 설명하기 위해 만든 SVG 도식입니다. 예상 출력은 Docker 29.x와 `redis:7.4-alpine`에서 확인한 결과입니다.
+예상 출력은 Docker 29.x와 `redis:7.4-alpine` 기준이며, IP 주소와 자동 생성 이름은 환경마다 다릅니다.
