@@ -15,6 +15,7 @@
 | 8주차 | [Docker 이미지로 실행 파일시스템을 만들다](week08/README.md) |
 | 9주차 | [Docker 애플리케이션 이미지 제작과 배포](week09/README.md) |
 | 10주차 | [데이터 영속성과 컨테이너 네트워크](week10/README.md) |
+| 11주차 | [Docker Compose와 멀티 컨테이너 운영](week11/README.md) |
 
 ## 수업에서 사용하는 방법
 
