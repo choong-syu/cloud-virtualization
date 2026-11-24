@@ -107,49 +107,51 @@ ip -o link show ens3
 ip -o link show docker0
 ```
 
-두 출력의 `mtu`가 모두 **`1442`이면 설정이 완료된 상태**입니다. 아래 접힌 부분은 건너뛰고 **명령 03-08**로 진행합니다.
+두 출력의 `mtu`가 모두 **`1442`이면 설정이 완료된 상태**입니다. 아래 접힌 부분은 건너뛰고 **명령 03-09**로 진행합니다.
 
 <details>
-<summary>Docker 기본 브리지의 MTU가 1442가 아닐 때만 펼치기 — 명령 03-06~03-07</summary>
+<summary>Docker 기본 브리지의 MTU가 1442가 아닐 때만 펼치기 — 명령 03-06~03-08</summary>
 
 VM의 `ens3`가 `1442`인데 `docker0`의 값이 다르면 아래 명령을 실행합니다. `ens3`도 `1442`가 아니라면 먼저 담당 교수에게 VM 네트워크 설정을 확인합니다.
 
-기존 Docker 설정에 `mtu` 값을 반영하고 Docker를 재시작합니다. 실행 중인 컨테이너가 중지될 수 있으므로 실습 컨테이너를 만들기 전에 실행합니다.
+8주차와 동일하게 Docker 설정 파일을 작성하고 MTU 값을 `1442`로 설정합니다. 아래 명령은 기존 파일 내용을 덮어씁니다. Docker 재시작 시 실행 중인 컨테이너가 중지될 수 있으므로 실습 컨테이너를 만들기 전에 실행합니다.
 
-**명령 03-06: MTU가 다르면 설정 적용**
+**명령 03-06: Docker 기본 브리지 MTU 설정**
 
 ```bash
-if [ "$(cat /sys/class/net/docker0/mtu)" != "1442" ]; then
-  sudo python3 - <<'PY'
-import json
-from pathlib import Path
-path = Path('/etc/docker/daemon.json')
-config = json.loads(path.read_text()) if path.exists() else {}
-config['mtu'] = 1442
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(config, indent=2) + '\n')
-PY
-  sudo systemctl restart docker
-fi
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
+{
+  "mtu": 1442
+}
+EOF
 ```
 
-**명령 03-07: 적용된 Docker MTU 확인**
+Docker를 재시작해 설정을 적용합니다.
+
+**명령 03-07: Docker 재시작**
+
+```bash
+sudo systemctl restart docker
+```
+
+**명령 03-08: 적용된 Docker MTU 확인**
 
 ```bash
 ip -o link show docker0
 ```
 
-출력의 `mtu 1442`를 확인한 뒤 **명령 03-08**로 진행합니다.
+출력의 `mtu 1442`를 확인한 뒤 **명령 03-09**로 진행합니다.
 
 </details>
 
-**명령 03-08: 실습 폴더 만들기**
+**명령 03-09: 실습 폴더 만들기**
 
 ```bash
 mkdir -p ~/week10/html ~/week10/web
 ```
 
-**명령 03-09: 실습 폴더로 이동**
+**명령 03-10: 실습 폴더로 이동**
 
 ```bash
 cd ~/week10
@@ -1095,7 +1097,7 @@ sudo docker image rm cv10-web:v1
 | `curl`에 `Connection refused` | 컨테이너가 시작 중. 잠시 후 다시 실행 |
 | `curl`에 `500` | `-e REDIS_HOST=redis-db`를 넣었는지, redis-db가 실행 중인지 확인 |
 | `ping: bad address 'redis-db'` | `--network cv10-net`을 넣었는지 확인 (명령 24-01에서는 의도한 오류) |
-| 빌드 중 `pip install`이 멈춤 | 명령 03-04~03-07의 MTU 설정 확인. `docker0`의 MTU가 `1442`인지 확인한 뒤 다시 빌드 |
+| 빌드 중 `pip install`이 멈춤 | 명령 03-04~03-08의 MTU 설정 확인. `docker0`의 MTU가 `1442`인지 확인한 뒤 다시 빌드 |
 | heredoc 뒤 `>`가 계속 나옴 | `Ctrl+C` 후 마지막 `EOF`까지 다시 복사 |
 
 ## 이론과 다음 주차 연결
