@@ -711,6 +711,14 @@ sudo docker rm -f cv10-bind
 
 컨테이너를 지우면 Docker가 veth와 NAT 규칙도 함께 지웁니다.
 
+**명령 21-02: 컨테이너 삭제 후 8082번 NAT 규칙 확인**
+
+```bash
+sudo iptables -t nat -L DOCKER -n | grep 8082
+```
+
+예상 결과: 아무것도 출력되지 않습니다. 명령 20-02에서 보였던 `cv10-bind`의 8082번 NAT 규칙이 컨테이너 삭제와 함께 제거되었습니다. `iptables`가 없어 명령 20-03을 사용했다면 그 명령으로 다시 확인합니다.
+
 ## Task 6. IP 대신 이름으로 찾기: 사용자 정의 네트워크
 
 교안 연결: 「컨테이너 IP는 고정되어 있지 않다」, 「Docker 내장 DNS」, 「기본 bridge와 사용자 정의 bridge 비교」
