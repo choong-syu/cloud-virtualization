@@ -189,6 +189,8 @@ sudo docker run -d --name cv10-tmp redis:7.4-alpine
 sudo docker exec cv10-tmp redis-cli set note hello
 ```
 
+![redis-cli set note hello: Redis에 키 note와 값 hello를 저장](images/redis-set-note.png)
+
 예상 출력: `OK` — 키 `note`에 값 `hello`를 저장했습니다. `redis-cli`는 Redis에 명령을 보내는 도구입니다.
 
 나중에 정리할 수 있도록 자동으로 붙은 볼륨 이름을 변수에 저장해 둡니다.
@@ -234,6 +236,8 @@ sudo docker run -d --name cv10-tmp redis:7.4-alpine
 ```bash
 sudo docker exec cv10-tmp redis-cli get note
 ```
+
+![새 컨테이너에서 redis-cli get note 실행: 키 note가 없어 조회할 값이 없음](images/redis-get-note-missing.png)
 
 예상 출력: **빈 줄** — 값이 없습니다. 같은 이름, 같은 이미지로 만들었지만 이전 데이터가 보이지 않습니다.
 
