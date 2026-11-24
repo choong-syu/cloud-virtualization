@@ -38,14 +38,18 @@
 
 - 학생별 Ubuntu VM에 SSH로 접속합니다. **모든 명령은 VM의 Bash에서 실행**합니다.
 - **코드 블록을 하나씩 복사해 위에서 아래 순서로 실행**합니다. 같은 SSH 창을 계속 사용합니다.
+- **명령 12-02**는 단계 12의 두 번째 명령입니다. 수업에서는 “12단계 2번 명령”처럼 부릅니다.
+- 조건문·반복문·여러 줄 명령은 번호 하나가 실행 단위입니다. 해당 코드 블록 전체를 복사합니다.
 - `cat > 파일 <<'EOF'` 블록은 마지막 `EOF`까지 한 번에 복사합니다.
 - compose.yaml은 **들여쓰기가 문법**입니다. 블록 전체를 그대로 복사하고, 직접 고칠 때는 탭(Tab) 대신 공백을 사용합니다.
 - "의도한 오류"라고 적힌 단계는 오류가 나오는 것이 정상입니다.
 - `docker compose` 명령은 **compose.yaml이 있는 `~/week11` 폴더에서** 실행해야 합니다.
 
-### 준비
+## 준비
 
-명령 01: Docker 실행 확인
+### 단계 01: Docker 실행 확인
+
+**명령 01-01: Docker 실행 확인**
 
 ```bash
 if systemctl is-active --quiet docker; then
@@ -55,17 +59,23 @@ else
 fi
 ```
 
-명령 02: Docker Compose 설치와 버전 확인
+### 단계 02: Docker Compose 설치와 버전 확인
 
 Ubuntu의 `docker.io`에는 Compose가 포함되어 있지 않으므로 플러그인을 설치합니다. 이미 설치되어 있으면 그대로 넘어갑니다.
+
+**명령 02-01: 패키지 목록 갱신**
 
 ```bash
 sudo apt-get update
 ```
 
+**명령 02-02: Docker Compose 플러그인 설치**
+
 ```bash
 sudo apt-get install -y docker-compose-v2
 ```
+
+**명령 02-03: Compose 버전 확인**
 
 ```bash
 sudo docker compose version
@@ -75,9 +85,11 @@ sudo docker compose version
 
 > 이번 실습은 플러그인 방식인 `docker compose`(띄어쓰기)를 사용합니다. 오래된 Compose V1 예제의 `docker-compose up`은 `docker compose up`으로 바꿔 읽습니다.
 
-명령 03: 이전 주차 자원과 포트 확인
+### 단계 03: 이전 주차 자원과 포트 확인
 
 이번 실습은 **8080과 8081**을 차례로 사용합니다. 10주차의 `web`이나 9주차의 `cv9-web-published`가 남아 있으면 포트가 겹칠 수 있습니다.
+
+**명령 03-01: 컨테이너의 포트 사용 현황 확인**
 
 ```bash
 sudo docker ps --format '{{.Names}}  {{.Ports}}'
@@ -85,24 +97,43 @@ sudo docker ps --format '{{.Names}}  {{.Ports}}'
 
 목록에 10주차의 `web`, `redis-db`가 있다면 10주차 [정리 명령](https://github.com/choong-syu/cloud-virtualization/blob/main/week10/README.md#실습-자원-정리)으로 먼저 정리합니다. 이전 실습의 웹 컨테이너는 남아 있을 때만 중지합니다.
 
+**명령 03-02: 이전 주차 웹 컨테이너 중지**
+
 ```bash
 for name in cv7-web cv9-web-published; do
   if [ "$(sudo docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null)" = true ]; then
     sudo docker stop "$name"
   fi
 done
+```
+
+**명령 03-03: 8080·8081번 포트 확인**
+
+```bash
 sudo ss -ltnp '( sport = :8080 or sport = :8081 )'
 ```
 
 8080·8081의 사용 내역이 없으면 다음으로 진행합니다. 다른 프로그램이 표시되면 해당 프로그램을 확인해 포트를 비운 뒤 진행합니다.
 
-명령 04: 작업 폴더 준비
+### 단계 04: 작업 폴더 준비
 
 폴더 이름 `week11`이 그대로 **프로젝트 이름**이 됩니다.
 
+**명령 04-01: 실습 폴더 만들기**
+
 ```bash
 mkdir -p ~/week11
+```
+
+**명령 04-02: 실습 폴더로 이동**
+
+```bash
 cd ~/week11
+```
+
+**명령 04-03: 현재 폴더 확인**
+
+```bash
 pwd
 ```
 
@@ -110,9 +141,11 @@ pwd
 
 교안 연결: 「명령형과 선언형」, 「compose.yaml의 최상위 구조」, 「10주차 명령어 → compose.yaml」, 「build와 image」
 
-명령 05: 방문자 카운터 프로그램 작성
+### 단계 05: 방문자 카운터 프로그램 작성
 
 `/`로 요청하면 Redis의 `hits`를 1 늘리고 방문 수를 응답합니다. `/crash`는 Task 5에서 오류 종료를 관찰하기 위한 실습용 경로입니다. 10주차 `app.py`에 이 경로를 추가했습니다.
+
+**명령 05-01: 방문자 카운터 app.py 작성**
 
 ```bash
 cat > app.py <<'EOF'
@@ -139,9 +172,11 @@ if __name__ == "__main__":
 EOF
 ```
 
-명령 06: Dockerfile 작성
+### 단계 06: Dockerfile 작성
 
 10주차와 같은 Dockerfile입니다.
+
+**명령 06-01: Dockerfile 작성**
 
 ```bash
 cat > Dockerfile <<'EOF'
@@ -155,9 +190,11 @@ CMD ["python", "app.py"]
 EOF
 ```
 
-명령 07: compose.yaml 작성
+### 단계 07: compose.yaml 작성
 
 10주차의 명령 4개를 파일 하나로 옮깁니다.
+
+**명령 07-01: compose.yaml 작성**
 
 ```bash
 cat > compose.yaml <<'EOF'
@@ -192,9 +229,11 @@ EOF
 | `redis-server --appendonly yes` | `command:` |
 | `docker network create cv10-net` | (적지 않아도 Compose가 자동 생성) |
 
-명령 08: 설정 확인
+### 단계 08: 설정 확인
 
 실행하기 전에 문법과 최종 설정을 확인하는 습관을 들입니다.
+
+**명령 08-01: Compose 문법과 최종 설정 확인**
 
 ```bash
 sudo docker compose config
@@ -202,7 +241,9 @@ sudo docker compose config
 
 오류 없이 설정이 출력되면 됩니다. 출력 끝부분에서 `name: week11_default`(네트워크)와 `name: week11_cv11-redis-data`(볼륨)를 찾아봅니다. 들여쓰기가 틀리면 여기서 오류가 나옵니다.
 
-명령 09: 한 번에 실행
+### 단계 09: 한 번에 실행
+
+**명령 09-01: 이미지 빌드와 서비스 실행**
 
 ```bash
 sudo docker compose up -d --build
@@ -219,7 +260,9 @@ sudo docker compose up -d --build
 
 10주차에 명령 4개로 하던 일을 한 줄로 끝냈습니다. `depends_on` 때문에 redis-db가 먼저 시작되었습니다.
 
-명령 10: 상태 확인과 접속
+### 단계 10: 상태 확인과 접속
+
+**명령 10-01: 서비스 실행 상태 확인**
 
 ```bash
 sudo docker compose ps
@@ -235,19 +278,25 @@ week11-web-1        cv11-web:v1        ...   web        Up 5 seconds   0.0.0.0:8
 
 아래 명령을 **세 번** 실행합니다.
 
+**명령 10-02: 방문자 카운터 접속 — 세 번 실행**
+
 ```bash
 curl http://localhost:8080
 ```
 
 예상 출력: `방문 횟수: 1` → `2` → `3`. **이후 모든 `up -d` 직후에도** 앱이 준비될 때까지 잠시 걸릴 수 있습니다. `Connection reset`·`Connection refused` 또는 시작 중 `500`이 나오면 잠시 후 다시 요청합니다. 추가로 성공한 요청만큼 방문 수가 늘어나므로, 아래 숫자보다 데이터가 이어지는지에 주목합니다.
 
-명령 11: Compose가 붙인 이름 확인
+### 단계 11: Compose가 붙인 이름 확인
 
 ![폴더 이름 week11이 컨테이너, 네트워크, 볼륨 이름 앞에 붙음](images/01-naming.png)
+
+**명령 11-01: 프로젝트 네트워크 이름 확인**
 
 ```bash
 sudo docker network ls --filter name=week11
 ```
+
+**명령 11-02: 프로젝트 볼륨 이름 확인**
 
 ```bash
 sudo docker volume ls --filter name=week11
@@ -263,13 +312,17 @@ sudo docker volume ls --filter name=week11
 
 그림 읽기: `.env`는 compose.yaml 안의 `${변수}` 자리를 채우는 파일입니다. 컨테이너 안의 환경 변수로 자동 전달되지는 않습니다.
 
-명령 12: .env 파일 만들고 compose.yaml에서 사용
+### 단계 12: .env 파일 만들고 compose.yaml에서 사용
+
+**명령 12-01: .env에 공개 포트 지정**
 
 ```bash
 echo "APP_PORT=8081" > .env
 ```
 
 포트 부분만 `${APP_PORT}`로 바꾼 compose.yaml로 다시 작성합니다.
+
+**명령 12-02: 포트 변수를 사용하는 compose.yaml 작성**
 
 ```bash
 cat > compose.yaml <<'EOF'
@@ -296,13 +349,17 @@ EOF
 
 변수가 어떻게 채워졌는지 확인합니다.
 
+**명령 12-03: 변수가 반영된 포트 확인**
+
 ```bash
 sudo docker compose config | grep published
 ```
 
 예상 출력: `published: "8081"` — `.env`의 값이 들어갔습니다.
 
-명령 13: 다시 up -d 하고 바뀐 서비스 확인
+### 단계 13: 다시 up -d 하고 바뀐 서비스 확인
+
+**명령 13-01: 변경된 설정 적용**
 
 ```bash
 sudo docker compose up -d
@@ -317,13 +374,17 @@ sudo docker compose up -d
 
 중간에 `Container week11-web-1  Recreate` → `Recreated`가 지나갑니다. 포트 설정이 바뀐 **web만 새로 만들었고**, redis-db는 `Running` 그대로입니다.
 
+**명령 13-02: 8081번 포트로 접속**
+
 ```bash
 curl http://localhost:8081
 ```
 
 예상 출력: `방문 횟수: 4` — redis-db와 볼륨을 그대로 두었으므로 이어서 증가합니다.
 
-명령 14: .env 값은 컨테이너 안에 없다
+### 단계 14: .env 값은 컨테이너 안에 없다
+
+**명령 14-01: 컨테이너 내부 환경 변수 확인**
 
 ```bash
 sudo docker compose exec web env | grep -E 'APP_PORT|REDIS_HOST'
@@ -337,7 +398,9 @@ sudo docker compose exec web env | grep -E 'APP_PORT|REDIS_HOST'
 
 ![up, stop, start, down, down -v에 따른 상태 변화](images/03-lifecycle.png)
 
-명령 15: down — 컨테이너와 네트워크만 삭제
+### 단계 15: down — 컨테이너와 네트워크만 삭제
+
+**명령 15-01: 컨테이너와 네트워크 삭제**
 
 ```bash
 sudo docker compose down
@@ -345,17 +408,23 @@ sudo docker compose down
 
 예상 출력: web, redis-db 컨테이너와 `week11_default` 네트워크가 `Removed`됩니다.
 
+**명령 15-02: 남아 있는 볼륨 확인**
+
 ```bash
 sudo docker volume ls --filter name=week11
 ```
 
 `week11_cv11-redis-data`는 **남아 있습니다.**
 
-명령 16: 다시 실행하면 방문 수가 이어지는지 확인
+### 단계 16: 다시 실행하면 방문 수가 이어지는지 확인
+
+**명령 16-01: 서비스 다시 실행**
 
 ```bash
 sudo docker compose up -d
 ```
+
+**명령 16-02: 보존된 방문 수 확인**
 
 ```bash
 curl http://localhost:8081
@@ -363,7 +432,9 @@ curl http://localhost:8081
 
 예상 출력: `방문 횟수: 5` — 컨테이너는 새로 만들었지만 볼륨의 데이터가 이어졌습니다.
 
-명령 17: down -v — 볼륨까지 삭제
+### 단계 17: down -v — 볼륨까지 삭제
+
+**명령 17-01: 볼륨까지 함께 삭제**
 
 ```bash
 sudo docker compose down -v
@@ -371,9 +442,13 @@ sudo docker compose down -v
 
 출력에 `Volume week11_cv11-redis-data  Removed`가 추가로 보입니다.
 
+**명령 17-02: 새 볼륨으로 서비스 실행**
+
 ```bash
 sudo docker compose up -d
 ```
+
+**명령 17-03: 초기화된 방문 수 확인**
 
 ```bash
 curl http://localhost:8081
@@ -394,7 +469,9 @@ curl http://localhost:8081
 
 ![web과 redis-db의 출력이 Docker 데몬을 거쳐 compose logs로 모임](images/04-logs.png)
 
-명령 18: 통합 로그 보기
+### 단계 18: 통합 로그 보기
+
+**명령 18-01: 전체 서비스 로그 확인**
 
 ```bash
 sudo docker compose logs --tail 5
@@ -402,23 +479,35 @@ sudo docker compose logs --tail 5
 
 `web-1 |`, `redis-db-1 |`처럼 서비스 이름이 앞에 붙은 로그가 함께 보입니다. web 로그에서 `"GET / HTTP/1.1" 200`을 찾아봅니다.
 
+**명령 18-02: web 로그만 확인**
+
 ```bash
 sudo docker compose logs --tail 3 web
 ```
 
 서비스 이름을 붙이면 그 서비스의 로그만 봅니다.
 
-> 실시간으로 보려면 `sudo docker compose logs -f`를 실행하고, 다른 SSH 창에서 `curl`을 실행해 봅니다. 빠져나올 때는 `Ctrl+C`를 누릅니다(컨테이너는 계속 실행됩니다).
+실시간으로 보려면 아래 명령을 실행하고, 다른 SSH 창에서 **명령 17-03**으로 접속해 봅니다. 빠져나올 때는 `Ctrl+C`를 누릅니다(컨테이너는 계속 실행됩니다).
 
-명령 19: 서비스 이름으로 내부 명령 실행
+**명령 18-03: 실시간 로그 관찰**
+
+```bash
+sudo docker compose logs -f
+```
+
+### 단계 19: 서비스 이름으로 내부 명령 실행
+
+**명령 19-01: 서비스 이름으로 Redis 방문 수 조회**
 
 ```bash
 sudo docker compose exec redis-db redis-cli get hits
 ```
 
-예상 출력: `"1"` — Redis에 저장된 방문 수입니다. 컨테이너 이름(`week11-redis-db-1`) 대신 서비스 이름(`redis-db`)을 썼습니다.
+예상 출력: `"1"` — 실시간 로그를 확인하면서 추가로 접속했다면 그만큼 증가한 값이 나옵니다. Redis에 저장된 방문 수이며, 컨테이너 이름(`week11-redis-db-1`) 대신 서비스 이름(`redis-db`)을 썼습니다.
 
-명령 20: 자원 사용량 보기
+### 단계 20: 자원 사용량 보기
+
+**명령 20-01: 컨테이너 자원 사용량 확인**
 
 ```bash
 sudo docker stats --no-stream
@@ -434,7 +523,9 @@ sudo docker stats --no-stream
 
 그림 읽기: 이번 실습의 `restart: on-failure`는 컨테이너의 주 프로세스가 **0이 아닌 종료 코드**로 끝나면 다시 시작합니다. `docker stop`이나 기본 `docker kill`로 직접 멈춘 경우에는 자동 재시작이 억제됩니다. `/crash`로 앱 오류 종료를 관찰합니다.
 
-명령 21: restart 정책 없이 앱을 죽여 보기
+### 단계 21: restart 정책 없이 앱을 죽여 보기
+
+**명령 21-01: 앱 오류 종료 유발 — 의도한 오류**
 
 ```bash
 curl http://localhost:8081/crash
@@ -442,13 +533,17 @@ curl http://localhost:8081/crash
 
 예상 출력: `curl: (52) Empty reply from server` — 앱이 응답하기 전에 오류 코드 1로 종료했습니다.
 
+**명령 21-02: 종료된 web 상태 확인**
+
 ```bash
 sudo docker compose ps -a
 ```
 
 예상 출력에서 web이 `Exited (1)`입니다. restart 정책이 없으므로 그대로 멈춰 있습니다.
 
-명령 22: restart: on-failure 추가
+### 단계 22: restart: on-failure 추가
+
+**명령 22-01: 자동 재시작 정책을 추가한 compose.yaml 작성**
 
 ```bash
 cat > compose.yaml <<'EOF'
@@ -474,19 +569,25 @@ volumes:
 EOF
 ```
 
+**명령 22-02: 자동 재시작 설정 적용**
+
 ```bash
 sudo docker compose up -d
 ```
 
 web에 `restart: on-failure`가 추가되어 web만 새로 만들어집니다.
 
-명령 23: 다시 /crash 호출
+### 단계 23: 다시 /crash 호출
 
 web이 시작된 뒤 10초 이상 기다리고 요청합니다.
+
+**명령 23-01: web 시작 후 10초 대기**
 
 ```bash
 sleep 10
 ```
+
+**명령 23-02: 앱 오류 종료 재현 — 의도한 오류**
 
 ```bash
 curl http://localhost:8081/crash
@@ -494,11 +595,15 @@ curl http://localhost:8081/crash
 
 앞과 같은 `Empty reply from server`가 의도한 결과입니다. 잠시 기다린 뒤 상태를 확인합니다.
 
+**명령 23-03: 자동으로 다시 시작된 web 확인**
+
 ```bash
 sudo docker compose ps
 ```
 
 예상 출력: web이 `Up 3 seconds`처럼 **다시 실행 중**입니다.
+
+**명령 23-04: 자동 재시작 횟수 확인**
 
 ```bash
 sudo docker inspect -f '{{.RestartCount}}' week11-web-1
@@ -506,23 +611,31 @@ sudo docker inspect -f '{{.RestartCount}}' week11-web-1
 
 예상 출력: `1` — Docker가 한 번 다시 시작했습니다.
 
+**명령 23-05: 복구 후 방문 수 확인**
+
 ```bash
 curl http://localhost:8081
 ```
 
 방문 수가 이어서 증가합니다. web이 다시 시작되어도 데이터는 redis-db에 있기 때문입니다.
 
-명령 24: docker kill은 재시작하지 않는다
+### 단계 24: docker kill은 재시작하지 않는다
+
+**명령 24-01: web을 직접 강제 종료**
 
 ```bash
 sudo docker kill week11-web-1
 ```
+
+**명령 24-02: 자동 재시작되지 않은 상태 확인**
 
 ```bash
 sudo docker compose ps -a
 ```
 
 예상 출력: web이 `Exited (137)`로 **멈춰 있습니다.** `docker kill`은 사용자가 멈춘 것으로 처리되어 restart 정책이 작동하지 않습니다. 다시 실행합니다.
+
+**명령 24-03: web 다시 실행**
 
 ```bash
 sudo docker compose up -d
@@ -536,9 +649,11 @@ sudo docker compose up -d
 
 그림 읽기: `depends_on`만 쓰면 redis-db가 **시작됨(Running)** 까지만 기다립니다. healthcheck로 redis-db가 **요청을 받을 준비(healthy)** 가 되었는지 검사하고, `condition: service_healthy`로 그다음에 web을 시작하게 합니다.
 
-명령 25: healthcheck와 service_healthy 추가
+### 단계 25: healthcheck와 service_healthy 추가
 
 이번 주의 최종 compose.yaml입니다.
+
+**명령 25-01: 상태 검사와 시작 조건을 추가한 compose.yaml 작성**
 
 ```bash
 cat > compose.yaml <<'EOF'
@@ -579,13 +694,17 @@ EOF
 | `retries` | 몇 번 연속 실패하면 unhealthy로 볼지 |
 | `start_period` | 시작 직후 실패를 세지 않는 유예 시간 |
 
-명령 26: 처음부터 다시 실행해 순서 관찰
+### 단계 26: 처음부터 다시 실행해 순서 관찰
 
 시작 순서를 보기 위해 컨테이너와 네트워크를 지우고(볼륨은 유지) 다시 실행합니다.
+
+**명령 26-01: 볼륨을 보존하며 서비스 삭제**
 
 ```bash
 sudo docker compose down
 ```
+
+**명령 26-02: 준비 상태에 따라 서비스 실행**
 
 ```bash
 sudo docker compose up -d
@@ -600,11 +719,15 @@ sudo docker compose up -d
 
 redis-db가 `Waiting` → `Healthy`가 된 **다음에** web이 시작되었습니다.
 
+**명령 26-03: Redis의 healthy 상태 확인**
+
 ```bash
 sudo docker compose ps
 ```
 
 예상 출력: redis-db의 STATUS에 `(healthy)`가 보입니다. `service_healthy`가 있으므로 `up -d`는 Redis의 검사 성공을 기다린 뒤 web을 시작합니다.
+
+**명령 26-04: 최종 방문자 카운터 접속**
 
 ```bash
 curl http://localhost:8081
@@ -639,14 +762,23 @@ curl http://localhost:8081
 
 결과를 먼저 기록한 뒤 이번 주에 만든 자원만 정리합니다. `docker system prune`처럼 한꺼번에 지우는 명령은 사용하지 않습니다.
 
-명령 27: 11주차 자원 정리
+### 단계 27: 11주차 자원 정리
+
+**명령 27-01: 실습 폴더로 이동**
 
 ```bash
 cd ~/week11
+```
+
+**명령 27-02: 이번 주 컨테이너·네트워크·볼륨 삭제**
+
+```bash
 sudo docker compose down -v
 ```
 
 컨테이너·네트워크·볼륨이 함께 삭제됩니다.
+
+**명령 27-03: 실습에서 빌드한 이미지 삭제**
 
 ```bash
 sudo docker image rm cv11-web:v1
@@ -660,15 +792,15 @@ sudo docker image rm cv11-web:v1
 
 | 증상 | 해결 |
 | --- | --- |
-| `'compose' is not a docker command` | 명령 02의 `docker-compose-v2` 설치 확인 |
+| `'compose' is not a docker command` | 명령 02-02의 `docker-compose-v2` 설치 확인 |
 | `no configuration file provided: not found` | compose.yaml이 있는 `~/week11`에서 실행했는지 확인 (`cd ~/week11`) |
 | `yaml: line N: ...` 문법 오류 | 탭 사용, 콜론 뒤 공백 누락, 들여쓰기 칸 수 확인. 블록 전체를 다시 복사 |
 | `the attribute 'version' is obsolete` 경고 | compose.yaml 맨 위의 `version:` 줄을 삭제 |
 | `The "APP_PORT" variable is not set` | `.env` 파일이 `~/week11`에 있는지 확인 (`cat .env`) |
-| `port is already allocated` | 명령 03에서 8080·8081 사용 내역 확인. 10주차 `web`, 9주차 `cv9-web-published` 등 해당 컨테이너 중지 |
+| `port is already allocated` | 명령 03-01~03-03에서 8080·8081 사용 내역 확인. 10주차 `web`, 9주차 `cv9-web-published` 등 해당 컨테이너 중지 |
 | `curl`에 `Connection reset`·`Connection refused` | 시작 중일 수 있음. 잠시 후 다시 실행. 계속되면 `sudo docker compose logs web` |
 | `curl`에 `500` | `environment:`의 `REDIS_HOST: redis-db` 확인, redis-db가 실행 중인지 `ps`로 확인 |
-| web이 `Exited (1)`로 멈춤 | Task 5 명령 21은 정상. 그 외에는 `logs web`으로 원인 확인 |
+| web이 `Exited (1)`로 멈춤 | Task 5 명령 21-01 실행 후에는 정상. 그 외에는 `logs web`으로 원인 확인 |
 | redis-db가 `(unhealthy)` | `sudo docker compose logs redis-db`로 Redis 오류 확인, healthcheck의 `test` 철자 확인 |
 | 빌드 중 `pip install`이 멈춤 | 8주차 MTU 설정(`cat /etc/docker/daemon.json`) 확인 후 다시 `up -d` |
 
