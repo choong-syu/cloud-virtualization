@@ -662,7 +662,17 @@ ip -br link show master docker0
 
 ### 단계 20: 포트 게시가 만든 NAT 규칙 확인
 
-**명령 20-01: iptables로 8082번 NAT 규칙 확인**
+명령 12-02에서 `cv10-bind`를 실행할 때 지정한 `-p 8082:80`이 만든 NAT 규칙을 확인합니다.
+
+**명령 20-01: 현재 실행 중인 컨테이너 확인**
+
+```bash
+sudo docker ps
+```
+
+`cv10-bind`가 실행 중이고, `PORTS`에 `8082->80/tcp`가 표시되는지 확인합니다.
+
+**명령 20-02: iptables로 8082번 NAT 규칙 확인**
 
 ```bash
 sudo iptables -t nat -L DOCKER -n | grep 8082
@@ -678,7 +688,7 @@ DNAT  tcp  --  0.0.0.0/0  0.0.0.0/0  tcp dpt:8082 to:172.17.0.2:80
 
 `iptables` 명령이 없을 때만 다음 대체 명령으로 확인합니다.
 
-**명령 20-02: nft로 NAT 규칙 확인 — iptables가 없을 때만**
+**명령 20-03: nft로 NAT 규칙 확인 — iptables가 없을 때만**
 
 ```bash
 sudo nft list ruleset | grep 8082
