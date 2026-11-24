@@ -10,12 +10,12 @@
 - **터미널 A:** 실습을 진행하는 SSH 창
 - **터미널 B:** 같은 VM에 별도로 접속한 호스트 관찰용 SSH 창
 - 각 명령 제목에 적힌 **실행 위치**를 먼저 확인합니다.
-- 호스트에서는 **Bash**, rootfs 안에서는 **BusyBox `sh`**를 사용합니다.
+- 호스트에서는 **Bash**, rootfs 안에서는 BusyBox `sh`를 사용합니다.
 - PID와 출력 형식은 환경에 따라 조금 다를 수 있습니다. 문서의 숫자를 맞추지 말고 **관점의 차이**를 확인합니다.
 
 ## 처음 한 번: 실습 환경 준비
 
-**시작 전 준비:** 아래 GitHub 준비 과정을 터미널 A의 **일반 사용자 호스트 Bash**에서 한 번 실행합니다. Ubuntu/Debian 전용이며 인터넷 연결과 `sudo` 권한이 필요합니다. 필수 도구는 VM의 공식 패키지 저장소에서 설치하고, 정적 BusyBox와 명령 링크를 갖춘 rootfs를 **`~/cloud-virtualization/assets/busybox-rootfs`**에 만듭니다. 계정이 `student45`이면 `/home/student45/cloud-virtualization/assets/busybox-rootfs`입니다. PPT의 `/home/student/rootfs`와 위치는 다르지만 새 `/`로 사용할 파일 트리라는 역할은 같습니다.
+**시작 전 준비:** 아래 GitHub 준비 과정을 터미널 A의 **일반 사용자 호스트 Bash**에서 한 번 실행합니다. Ubuntu/Debian 전용이며 인터넷 연결과 `sudo` 권한이 필요합니다. 필수 도구는 VM의 공식 패키지 저장소에서 설치하고, 정적 BusyBox와 명령 링크를 갖춘 rootfs를 `~/cloud-virtualization/assets/busybox-rootfs`에 만듭니다. 계정이 `student45`이면 `/home/student45/cloud-virtualization/assets/busybox-rootfs`입니다. PPT의 `/home/student/rootfs`와 위치는 다르지만 새 `/`로 사용할 파일 트리라는 역할은 같습니다.
 
 ### 준비 순서
 
@@ -285,7 +285,7 @@ busybox-rootfs
 cat /etc/hostname
 ```
 
-예상 결과: **호스트의 `/etc/hostname`**에 저장된 이름이 나옵니다. 명령 07의 `busybox-rootfs`와 비교합니다.
+예상 결과: 호스트의 `/etc/hostname`에 저장된 이름이 나옵니다. 명령 07의 `busybox-rootfs`와 비교합니다.
 
 | 터미널 A에서 입력한 경로 | 실제로 읽는 파일 |
 | --- | --- |
@@ -649,7 +649,7 @@ exec chroot "$ROOTFS" /bin/sh
 
 ![exec chroot 전후 같은 프로세스의 PID 1과 namespace는 유지된다. 루트가 rootfs로 바뀌며 기존에 마운트한 새 procfs가 /proc로 보이고 PID 1의 프로그램은 bash에서 sh로 바뀐다](images/03-exec-chroot-pid1.png)
 
-앞에서 `$ROOTFS/proc`에 준비한 procfs도 이제 프로세스에게 **`/proc`**로 보입니다.
+앞에서 `$ROOTFS/proc`에 준비한 procfs도 이제 프로세스에게 `/proc`로 보입니다.
 
 ---
 

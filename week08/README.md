@@ -45,7 +45,7 @@ Docker의 Client·Server 연결을 확인합니다.
 sudo docker version
 ```
 
-`docker: command not found`가 나오거나 `Server` 연결에 실패하면 아래의 **「Docker 명령이 없거나 Docker 서버에 연결되지 않을 때」**를 펼쳐 먼저 해결합니다. Client·Server가 모두 확인되기 전에는 Buildx 설치로 넘어가지 않습니다.
+`docker: command not found`가 나오거나 `Server` 연결에 실패하면 아래의 「Docker 명령이 없거나 Docker 서버에 연결되지 않을 때」를 펼쳐 먼저 해결합니다. Client·Server가 모두 확인되기 전에는 Buildx 설치로 넘어가지 않습니다.
 
 <details>
 <summary>Docker 명령이 없거나 Docker 서버에 연결되지 않을 때</summary>
@@ -470,7 +470,7 @@ sudo docker run --rm cv8-task1:v2
 
 두 출력의 첫 줄은 `Cloud Virtualization - Week 08`로 같습니다. v1의 둘째 줄은 `Docker Image Build Practice`이고, v2는 둘째 줄이 `Docker Build Cache Practice`로 바뀌고 셋째 줄 `Version 2`가 추가됩니다.
 
-**이유:** `COPY`는 빌드할 때의 호스트 파일 내용을 이미지에 복사합니다. 호스트 파일과 이미지의 파일이 실시간으로 동기화되는 것은 아닙니다. 이번에는 바뀐 내용을 **새 태그 `v2`**로 빌드했으므로 `v1`에서 읽는 파일은 이전 내용 그대로입니다. 비교를 마칠 때까지 `v1` 태그로 다시 빌드하지 않습니다.
+**이유:** `COPY`는 빌드할 때의 호스트 파일 내용을 이미지에 복사합니다. 호스트 파일과 이미지의 파일이 실시간으로 동기화되는 것은 아닙니다. 이번에는 바뀐 내용을 새 태그 `v2`로 빌드했으므로 `v1`에서 읽는 파일은 이전 내용 그대로입니다. 비교를 마칠 때까지 `v1` 태그로 다시 빌드하지 않습니다.
 
 **명령 20: 명령 순서 비교용 파일 두 개 작성 — 호스트 Bash**
 

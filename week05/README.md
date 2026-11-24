@@ -521,7 +521,7 @@ IP 주소가 같은 서브넷에 있다는 사실만으로 **물리적·가상 �
 
 ## 4. Linux Bridge로 두 namespace 연결하기
 
-**Linux Bridge**는 여러 Ethernet 인터페이스를 하나의 Layer 2 네트워크로 연결하는 Linux 커널 기능입니다. **Layer 2(L2)**는 여기서 Ethernet frame과 MAC 주소를 다루는 계층을 뜻합니다. 개념적으로는 작은 **가상 스위치**처럼 생각할 수 있습니다.
+**Linux Bridge**는 여러 Ethernet 인터페이스를 하나의 Layer 2 네트워크로 연결하는 Linux 커널 기능입니다. Layer 2(L2)는 여기서 Ethernet frame과 MAC 주소를 다루는 계층을 뜻합니다. 개념적으로는 작은 **가상 스위치**처럼 생각할 수 있습니다.
 
 이번에는 호스트에 남아 있는 두 veth 끝 `test-a-host`, `test-b-host`를 `test-br0`라는 bridge의 포트로 연결합니다.
 
@@ -577,7 +577,7 @@ sudo ip link set test-br0 up
 
 - `ip link set test-br0 up`: 생성한 bridge를 활성화합니다.
 - 이번 실습에서는 bridge에 IPv4 주소를 넣지 않습니다.
-- bridge가 Ethernet frame을 전달하는 것과, 호스트가 이 bridge를 통해 IPv4 통신의 **당사자(송신자 또는 수신자)**로 참여하는 것은 서로 다른 역할입니다. 이번에는 두 namespace 사이의 전달만 확인합니다.
+- bridge가 Ethernet frame을 전달하는 것과, 호스트가 이 bridge를 통해 IPv4 통신의 당사자(송신자 또는 수신자)로 참여하는 것은 서로 다른 역할입니다. 이번에는 두 namespace 사이의 전달만 확인합니다.
 
 #### 24. (호스트) bridge와 포트 관계 확인
 
