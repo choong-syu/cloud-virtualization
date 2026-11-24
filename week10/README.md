@@ -446,6 +446,8 @@ sudo docker run -d --name cv10-vol-html -p 8083:80 \
   nginx:alpine
 ```
 
+`cv10-html-vol`은 앞에서 만들지 않은 볼륨입니다. 이 이름의 볼륨이 없으면 Docker가 **새 Named Volume을 자동으로 생성**하므로, `docker volume create`를 먼저 실행할 필요가 없습니다. 생성된 빈 볼륨을 `/usr/share/nginx/html`에 연결하면 이미지의 기존 파일이 볼륨으로 복사됩니다. 같은 이름의 볼륨이 이미 있다면 해당 볼륨을 재사용합니다.
+
 **명령 14-02: nginx 기본 페이지 확인**
 
 ```bash
